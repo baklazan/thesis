@@ -1,0 +1,12 @@
+\newcommand{\noopsort}[1]{} \newcommand{\printfirst}[2]{#1}
+  \newcommand{\singleletter}[1]{#1} \newcommand{\switchargs}[2]{#2#1}
+\begin{thebibliography}{1}
+
+\bibitem{Stoiber2017}
+Marcus~H Stoiber, Joshua Quick, Rob Egan, Ji~Eun Lee, Susan~E Celniker, Robert
+  Neely, Nicholas Loman, Len Pennacchio, and James~B Brown.
+\newblock De novo identification of {DNA} modifications enabled by
+  genome-guided nanopore signal processing.
+\newblock {\em bioRxiv}, 2017.
+
+\end{thebibliography}

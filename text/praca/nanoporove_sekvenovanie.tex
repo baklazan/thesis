@@ -1,0 +1,78 @@
+\chapter{Nanopórové sekvenovanie DNA}
+
+\label{kap:nanoporove_sekvenovanie}
+
+Genetická informácia je v prírode často kódovaná deoxyribonukleovou kyselinou (DNA\footnote{z anglického 
+\emph{\textbf{d}eoxyribo\textbf{n}ucleic \textbf{a}cid}}). DNA je tvorená dvoma vláknami spletenými
+do tvaru dvojzávitnice. Každé vlákno obsahuje postupnosť dusíkatých báz, ktorá kóduje informáciu. V DNA 
+sa 
+vyskytujú štyri
+dusíkaté bázy: adenín (A), cytozín (C), guanín (G) a tymín (T). Postupnosti báz v jednotlivých vláknach 
+sú 
+komplementárne: na pozíciách, kde má prvé vlákno adenín 
+(resp. cytozín, guanín, tymín) má druhé vlákno tymín (resp. guanín, cytozín, adenín). Na 
+zrekonštruovanie 
+celej informácie nám teda stačí poznať poradie báz v jednom z vlákien.
+
+Proces zisťovania poradia báz v DNA sa nazýva \emph{sekvenovanie} DNA. Techniky sekvenovania DNA
+boli známe už v sedemdesiatych rokoch minulého storočia a od vtedy sa stále vyvíjajú. Pri sekvenovaní
+sa určí poradie dusíkatých báz vo fragmentoch DNA, nazývaných \emph{čítania}. Z dostatočného počtu 
+prekrývajúcich sa čítaní sa potom dá zrekonštruovať celá postupnosť báz v DNA. Pre rôzne sekvenačné 
+technológie sú typické rôzne dĺžky čítaní, ktoré produkujú.
+
+Jednou z najnovších sekvenačných technológií je nanopórové sekvenovanie. Vyznačuje sa dlhými čítaniami,
+nízkou cenou a dostupnosťou prvých dát už počas sekvenovania, ale aj veľkým množstvom chýb v 
+jednotlivých čítaniach. Pri nanopórovom sekvenovaní sa vo vhodne zvolenej membráne vytvorí 
+\emph{nanopór}, t. j. otvor s priemerom rádovo $1 \si{nm}$. Membránou sa oddelia dve komory s 
+elektrolytom, pričom v jednej z komôr sa nachádza aj predpripravená vzorka DNA.
+Po zavedení elektrického napätia medzi komorami začne nanopórom tiecť iónový prúd. Vďaka elektroforéze a 
+za pomoci enzýmov sa jedno vlákno DNA postupne oddeľuje od druhého a prechádza nanopórom. Časť vlákna, 
+ktorá sa práve nachádza v najužšej časti nanopóru, má vplyv na elektrický prúd tečúci cez nanopór. Rôzne 
+bázy ovplyvňujú elektrický prúd rôznym spôsobom. Pri sekvenovaní sa meria priebeh elektrického prúdu v 
+čase a na základe jeho zmien sa potom určuje, aké bázy prešli cez nanopór.
+
+TODO: obrázok
+
+\section{Sekvenátor MinION}
+
+Prístroj MinION je nanopórový sekvenátor vyrábaný firmou Oxford Nanopore Technologies. V našej práci 
+budeme používať dáta získané týmto sekvenátorom. V MinIONe sa používa polymérová membrána, do ktorej sú 
+zasadené proteínové nanopóry. Sekvenátor obsahuje stovky nanopórov, dokáže teda sekvenovať niekoľko DNA 
+vlákien súčasne.
+Vo verzii, s ktorou pracujeme, prechádza vlákno DNA cez nanopór rýchlosťou približne $400$ báz za 
+sekundu. Hodnota elektrického prúdu sa zaznamenáva $4000$-krát za sekundu, teda v priemere zhruba $10$-
+krát na bázu. Namerané hodnoty prúdu sa pre každé čítanie ukladajú do zvlášť súboru vo formáte 
+\texttt{.fast5}. Tieto nespracované dáta budeme nazývať \emph{surový signál}, alebo, ak nebude hroziť 
+nedorozumenie, skrátene iba \emph{signál}.
+
+TODO: obrázok
+
+\subsection{Normalizácia signálu}
+
+Surový signál závisí nielen od úseku DNA nachádzajúceho sa v nanopóre, ale aj od ďalších faktorov, ktoré 
+sa pre rôzne čítania môžu líšiť. Pred ďalším spracovaním je preto potrebné surový signál znormalizovať.
+
+Jednou z metód normalizácie je \emph{mediánová normalizácia}, ktorú navrhujú Stoiber et. al. v \cite{Stoiber2017}.
+
+\begin{definicia}
+Nech $a_1, a_2, \dots, a_n \in \mathbb{R}$. Symbolom
+$$\median{i=1}{n}(a_i)$$
+budeme značiť medián hodnôt $a_1, a_2, \dots, a_n$.
+\end{definicia}
+
+\begin{definicia}
+Nech $r_1, r_2, \dots, r_n$ sú namerané hodnoty surového signálu. Nech
+ $$M = \median{i=1}{n}(r_i)$$ a nech $$D = \median{i=1}{n}(\abs*{r_i - M}) \text{.}$$
+
+\emph{Mediánovo znormalizovaný} signál je postupnosť $s_1, s_2, \dots, s_n$ určená predpisom
+
+$$s_i = \frac{r_i - M}{D} \text{.}$$
+
+\end{definicia}
+
+\subsection{Určovanie báz}
+
+Pri určovaní báz sa využíva fakt, že rôzne bázy pri svojom prechode nanopórom ovplyvňujú signál
+rôznym charakteristickým spôsobom. V praxi však signál nie je ovplyvnený iba jednou bázou. Pracuje
+sa preto s predpokladom, že signál je ovplyvnený $k$ po sebe idúcimi bázami, ktoré sú práve najbližšie
+k nanopóru.
