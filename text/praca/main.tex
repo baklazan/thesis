@@ -7,6 +7,8 @@
 \usepackage{amssymb}
 \usepackage{mathtools}
 \usepackage{url}
+\usepackage[scaled=0.85]{beramono}
+\usepackage{color,soul}
 \usepackage[hidelinks,breaklinks]{hyperref}
 \usepackage[slovak]{babel} % vypnite pre prace v anglictine
 \usepackage{siunitx}
@@ -16,6 +18,10 @@
 \mathrm{MEDIAN}_{#1}^{#2}
 }
 \DeclarePairedDelimiter\abs{\lvert}{\rvert}
+
+\hyphenation{MinION}
+\hyphenation{MinIONa}
+\hyphenation{MinIONom}
 
 \newtheorem{veta}{Veta}
 \newtheorem{tvrdenie}{Tvrdenie}
@@ -216,7 +222,9 @@ Slovak translation of abstract coming here.
 
 \input uvod.tex 
 
-\input nanoporove_sekvenovanie.tex
+\input sekvenovanie.tex
+
+\input ciele.tex
 
 \input zarovnanie.tex
 
