@@ -1,0 +1,50 @@
+\chapter{Ciele práce}
+
+\label{kap:ciele}
+
+Pri niektorých využitiach DNA sekvenovania sa sekvenuje vzorka, o ktorej je známe, že by
+sa mala podobať na inú, už osekvenovanú DNA. 
+Cieľom sekvenovania je potom zistiť, ako sa tieto dve DNA postupnosti líšia. Jedným z takýchto využití 
+je napríklad zisťovanie rezistencie baktérií na antibiotiká \cite{Bradley2015}.
+
+V našej práci sa budeme zaoberať nasledujúcim scenárom. Máme nejakú známu postupnosť
+dusíkatých báz, ktorú budeme nazývať \emph{referencia}. Ďalej máme vzorku DNA, o ktorej vieme,
+že sa od referencie líši len veľmi málo. Táto vzorka bola spracovaná MinIONom, máme teda k dispozícii
+nameraný surový signál z jednotlivých čítaní. Naším cieľom je identifikovať varianty v sekvenovanej
+vzorke vzhľadom na referenciu. Ideálne by bolo vedieť s dobrou presnosťou určovať varianty už z jedného čítania.
+
+Snažíme sa teda navrhnúť algoritmus s nasledovným vstupom a výstupom (neformálne):
+
+\begin{description}
+
+\item[Vstup:] \begin{description}
+\item referenčná postupnosť dusíkatých báz,
+\item postupnosť nameraných hodnôt surového signálu,
+\item \textit{nepovinné}: odhad očakávaného množstva variantov
+\end{description}
+
+\item[Výstup:] \begin{description}
+\item popis nájdených variantov (pozícia, typ, skóre)
+\end{description}
+\end{description}
+
+Náš algoritmus bude nevyhnutne robiť chyby. V niektorých prípadoch nezvládne nájsť variant, ktorý vzorka
+obsahovala (falošné odmietnutie), v iných prípadoch nájde variant, ktorý neexistuje (falošné prijatie). 
+V niektorých aplikáciách môže byť cena za chyby jedného druhu väčšia, než cena za chyby opačného 
+druhu. Algoritmus preto vráti ku každému z nájdených variantov aj skóre, indikujúce istotu algoritmu, že 
+naozaj ide o variant. Znižovaním minimálneho skóre, ktoré budeme vyžadovať, aby sme nájdený variant 
+považovali za skutočný, bude možné znížit množstvo falošných odmietnutí za cenu zvýšenia množstva 
+falošných prijatí, a obrátene.
+
+\section{Rozdiel oproti určovaniu báz}
+
+Jedným z možných riešení nášho problému je určiť zo signálu bázy pomocou niektorého z existujúcich 
+basecallerov a následne už len zisťovať odlišnosti dvoch postupností báz. Problémom tohoto riešenia
+je nízka presnosť (ak nemáme veľa prekrývajúcich sa čítaní). 
+
+Pri tomto prístupe však basecaller vôbec
+nevyužíva fakt, že sekvenovaná postupnosť sa podobá na referenciu. Uvažuje teda podstatne väčší 
+priestor možných výsledných sekvencií, než je nutné. V dôsledku toho upredňostňuje sekvencie, ktoré 
+lepšie vysvetľujú pozorovaný signál, aj keď môžu byť výrazne vzdialené od referencie.
+Zmenšenie priestoru uvažovaných sekvencií môže navyše znížiť výpočtovú náročnosť určovania báz, prípadne
+umožniť použitie presnejších techník, ktoré by za normálnych okolností boli príliš časovo náročné.

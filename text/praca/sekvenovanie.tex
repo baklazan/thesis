@@ -1,0 +1,143 @@
+\chapter{Sekvenovanie DNA}
+
+\label{kap:sekvenovanie}
+
+Genetická informácia je v prírode často kódovaná deoxyribonukleovou kyselinou (DNA\footnote{z anglického 
+\emph{\textbf{d}eoxyribo\textbf{n}ucleic \textbf{a}cid}}). DNA je tvorená dvoma vláknami spletenými
+do tvaru dvojzávitnice. Každé vlákno obsahuje postupnosť dusíkatých báz, ktorá kóduje informáciu. V DNA 
+sa 
+vyskytujú štyri
+dusíkaté bázy: adenín (A), cytozín (C), guanín (G) a tymín (T). Postupnosti báz v jednotlivých vláknach 
+sú 
+komplementárne: na pozíciách, kde má prvé vlákno adenín 
+(resp. cytozín, guanín, tymín) má druhé vlákno tymín (resp. guanín, cytozín, adenín). Na 
+zrekonštruovanie 
+celej informácie nám teda stačí poznať poradie báz v jednom z vlákien.
+
+Proces zisťovania poradia báz v DNA sa nazýva \emph{sekvenovanie} DNA. Techniky sekvenovania DNA
+boli známe už v sedemdesiatych rokoch minulého storočia a od vtedy sa stále vyvíjajú. Pri sekvenovaní
+sa určí poradie dusíkatých báz vo fragmentoch DNA, nazývaných \emph{čítania}. Z dostatočného počtu 
+prekrývajúcich sa čítaní sa potom dá zrekonštruovať celá postupnosť báz v DNA. Pre rôzne sekvenačné 
+technológie sú typické rôzne dĺžky čítaní, ktoré produkujú.
+
+\section{Nanopórové sekvenovanie DNA}
+
+Jednou z najnovších sekvenačných technológií je nanopórové sekvenovanie. Vyznačuje sa dlhými čítaniami,
+nízkou cenou a dostupnosťou prvých dát už počas sekvenovania, ale aj veľkým množstvom chýb v 
+jednotlivých čítaniach. Pri nanopórovom sekvenovaní sa vo vhodne zvolenej membráne vytvorí 
+\emph{nanopór}, t. j. otvor s priemerom rádovo $1 \si{nm}$. Membránou sa oddelia dve komory s 
+elektrolytom, pričom v jednej z komôr sa nachádza aj predpripravená vzorka DNA.
+Po zavedení elektrického napätia medzi komorami začne nanopórom tiecť iónový prúd. Vďaka elektroforéze a 
+za pomoci enzýmov sa jedno vlákno DNA postupne oddeľuje od druhého a prechádza nanopórom. Časť vlákna, 
+ktorá sa práve nachádza v najužšej časti nanopóru, má vplyv na elektrický prúd tečúci cez nanopór. Rôzne 
+bázy ovplyvňujú elektrický prúd rôznym spôsobom. Pri sekvenovaní sa meria priebeh elektrického prúdu v 
+čase a na základe jeho zmien sa potom určuje, aké bázy prešli cez nanopór.
+
+%TODO: obrázok
+
+\subsection{Sekvenátor MinION}
+
+Prístroj MinION je nanopórový sekvenátor vyrábaný firmou Oxford Nanopore Technologies. V našej práci 
+budeme používať dáta získané týmto sekvenátorom. V MinIONe sa používa polymérová membrána, do ktorej sú 
+zasadené proteínové nanopóry. Sekvenátor obsahuje stovky nanopórov, dokáže teda sekvenovať niekoľko DNA 
+vlákien súčasne.
+Vo verzii, s ktorou pracujeme, prechádza vlákno DNA cez nanopór rýchlosťou približne $400$ báz za 
+sekundu. Hodnota elektrického prúdu sa zaznamenáva $4000$-krát za sekundu, teda v priemere zhruba $10$-
+krát na bázu. Namerané hodnoty prúdu sa pre každé čítanie ukladajú do zvlášť súboru vo formáte 
+\texttt{.fast5}. Tieto nespracované dáta budeme nazývať \emph{surový signál}.
+
+%TODO: obrázok
+
+\subsubsection{Normalizácia signálu}
+
+Surový signál závisí nielen od úseku DNA nachádzajúceho sa v nanopóre, ale aj od ďalších faktorov, ktoré 
+sa pre rôzne čítania môžu líšiť. Pred ďalším spracovaním je preto potrebné surový signál znormalizovať.
+
+Jednou z metód normalizácie je \emph{mediánová normalizácia}, ktorú navrhujú Stoiber et. al. v 
+\cite{Stoiber2017}.
+
+\begin{definicia}
+Nech $a_1, a_2, \dots, a_n \in \mathbb{R}$. Symbolom
+$$\median{i=1}{n}(a_i)$$
+budeme značiť medián hodnôt $a_1, a_2, \dots, a_n$.
+\end{definicia}
+
+\begin{definicia}
+Nech $r_1, r_2, \dots, r_n$ sú namerané hodnoty surového signálu. Nech
+ $$M = \median{i=1}{n}(r_i)$$ a nech $$D = \median{i=1}{n}(\abs*{r_i - M}) \text{.}$$
+
+\emph{Mediánovo znormalizovaný} signál je postupnosť $s_1, s_2, \dots, s_n$ určená predpisom
+
+$$s_i = \frac{r_i - M}{D} \text{.}$$
+
+\end{definicia}
+
+\subsubsection{Určovanie báz}
+
+Na základe signálu nameraného MinIONom sa určuje, aké dusíkaté bázy prechádzali nanopórom, keď bol
+tento signál zaznamenaný. Táto úloha je pomerne náročná a v súčasnosti sa stále vyvíjajú lepšie a
+lepšie riešenia. Programy, ktoré určujú bázy, nazývame \emph{basecallery}\footnote{z anglického \emph{base calling} -- určovanie báz.}.
+
+Pri určovaní báz sa využíva fakt, že rôzne bázy pri svojom prechode nanopórom ovplyvňujú signál
+rôznym charakteristickým spôsobom. V praxi však signál nie je ovplyvnený iba jednou bázou. Pracuje
+sa preto s predpokladom, že signál je ovplyvnený $k$ po sebe idúcimi bázami, ktoré sú práve najbližšie
+k nanopóru. Skupinám $k$ po sebe idúcich báz sa hovorí \emph{$k$-mery}.
+
+Ďalším problémom je, že vlákno DNA cez nanopór neprechádza konštantnou rýchlosťou. Jednotlivým bázam vo 
+výslednej postupnosti preto môžu zodpovedať rôzne dlhé úseky signálu. Prvým krokom pri určovaní báz 
+preto často býva rozdelenie signálu na úseky, v rámci ktorých bola hodnota signálu približne konštantná.
+Týmto úsekom sa hovorí \emph{udalosti}. Pri ďalšom spracovaní sa predpokladá, že medzi jednotlivými 
+udalosťami sa vlákno DNA väčšinou posunie o jednu bázu. Keďže však rozdelenie signálu na udalosti nemusí
+presne zodpovedať posunom DNA vlákna v nanopóre, uvažuje sa aj možnosť, že sa vlákno medzi udalosťami 
+neposunulo, prípadne posunulo o viac než jednu bázu.
+
+%TODO: obrázok
+
+Niektoré basecallery (napr. Nanocall \cite{Nanocall2017}) modelujú prechod DNA vlákna nanopórom ako 
+skrytý Markovovský model. Skrytým stavom je $k$-mer, ktorý sa práve nachádza v nanopóre a ovplyvňuje 
+signál. Viditeľným výstupom modelu sú udalosti. Z každého stavu ($k$-meru) sú možné prechody do štyroch 
+$k$-merov, ktoré po ňom môžu nasledovať. Napríklad pre $k=6$ sa zo stavu \texttt{ACCGCT} dá prejsť do
+stavov \texttt{CCGCTA}, \texttt{CCGCTC}, \texttt{CCGCTG} a \texttt{CCGCTT}. Okrem toho je ešte, s menšou 
+pravdepodobnosťou, možný prechod naspäť do toho istého stavu (modelujúci udalosti, pri ktorých sa DNA 
+vlákno neposunulo) a prechody modelujúce posun o viac ako jednu bázu. Pravdepodobnostné distribúcie 
+hodnoty signálu pre jednotlivé $k$-mery poskytuje výrobca MinIONa \cite{KmerModels}. Na základe tohto
+modelu sa Viterbiho algoritmom vypočíta najpravdepodobnejšia postupnosť báz, ktorá mohla vygenerovať 
+pozorovaný signál.
+
+Iné basecallery sú založené na rekurentných neurónových sieťach. Niektoré (napr. DeepNano 
+\cite{DeepNano2017}) pracujú so signálom rozdeleným na udalosti, iné pracujú s nerozdeleným signálom 
+(napr. Chiron \cite{Chiron2017}).
+
+Najlepšie súčasné basecallery majú pre jedno čítanie presnosť okolo $85\%$ až $90\%$. Ak sa osekvenuje viac kópií rovnakej DNA, skombinovaním dostatočného počtu prekrývajúcich sa čítaní sa dá dosiahnuť presnosť okolo $99,9\%$ \cite{BasecallerComparison}.
+
+\section{Varianty v DNA}
+
+V prírode sa často vyskytujú dvojice DNA molekúl, ktoré obsahujú veľmi podobnú postupnosť báz, líšiacu sa iba v malých detailoch. Typickým príkladom sú DNA dvoch rôznych jedincov rovnakého druhu. Tieto malé odlišnosti v DNA voláme \emph{varianty}. Najjednoduchšie druhy variantov sú nasledovné.
+
+\begin{description}
+\item [Jednonukleotidový polymorfizmus (SNP\footnotemark).]\footnotetext{z anglického \emph{\textbf{s}ingle \textbf{n}ucleotide \textbf{p}olymorphism}} Jedna báza z prvej DNA postupnosti sa v druhej postupnosti nahradí inou bázou.
+
+\begin{center}
+\texttt{ACCACTG\textbf{\hl{G}}ACTTTCGA \\
+ACCACTG\textbf{\hl{C}}ACTTTCGA
+}
+\end{center}
+
+\item [Inzercia.] Do postupnosti je vsunutá skupina báz.
+
+\begin{center}
+\texttt{ACCACTG\hl{ }GACTTTCGA \\
+ACCACTG\textbf{\hl{AT}}GACTTTCGA
+}
+\end{center}
+
+\item [Delécia.] Z postupnosti vypadne súvislá skupina báz.
+
+\begin{center}
+\texttt{ACCACT\textbf{\hl{GG}}ACTTTCGA \\
+ACCACT\hl{ }ACTTTCGA
+}
+\end{center}
+
+
+\end{description}
