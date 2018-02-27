@@ -15,7 +15,8 @@ class interesting_base:
   
   def get_normalized_probability(self):
     if self.normalized_probability is None:
-      p = np.exp(self.log_probability)
+      shifted = self.log_probability - np.max(self.log_probability)
+      p = np.exp(shifted)
       sum = np.sum(p)
       self.normalized_probability = p / sum
     return self.normalized_probability
@@ -34,11 +35,14 @@ class interesting_base:
         decoration = "*"
       elif alphabet[i] == self.real_value:
         decoration = "-"
-      sys.stdout.write("\t{:8.4f}[{:8.4f}]{}".format(p, self.log_probability[i], decoration))
+      sys.stdout.write("\t{:8.4f}[{:8.6f}]{}".format(p, self.log_probability[i], decoration))
     sys.stdout.write("\n")
 
   def output(self, f):
     f.write("{} {}\n".format(self.real_value, "\t".join(map(str, self.get_normalized_probability()))))
+
+  def __lt__(self, other):
+    return self.id < other.id
 
 def load_interesting_bases(filename, reference):
   result = []
