@@ -1,5 +1,9 @@
 import h5py
 import numpy as np
+from kmer_model import *
+import matplotlib.pyplot as plt
+from scipy import interpolate
+
 
 class resquiggled_read:
   def __init__(self, filename = None, kmer_model = None):
@@ -36,3 +40,20 @@ class resquiggled_read:
       
       self.normalized_signal = kmer_model.normalize_signal(self.raw_signal, f)
       self.number_of_events = len(events)
+
+  def tweak_normalization(self, reference, kmer_model):
+    data = []
+    for i, mean in enumerate(self.event_mean):
+      id_in_reference = i + self.start_in_reference
+      kmer_start = id_in_reference - kmer_model.central_position
+      kmer_end = kmer_start + kmer_model.k
+      kmer = reference[kmer_start:kmer_end]
+      expected_mean = kmer_model.mean[kmer_to_id(kmer)]
+      if abs(expected_mean - mean) <= 1:
+        data.append((mean, expected_mean))
+
+    data.sort()
+    x = [d[0] for d in data]
+    y = [d[1] for d in data]
+    fnc = interpolate.splrep(x, y, s=len(x))
+    self.normalized_signal = interpolate.splev(self.normalized_signal, fnc)

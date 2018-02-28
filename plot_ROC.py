@@ -104,6 +104,8 @@ def plot_rocs(scores, labels, plots):
     plot.set_xlabel("FAR")
     plot.set_ylabel("FRR")
     plot.set_title(alphabet[i])
+    plot.set_xlim((0, 0.2))
+    plot.set_ylim((0, 0.2))
     my_points = []
     for p in points:
       p_was_me = np.sum(p[i])

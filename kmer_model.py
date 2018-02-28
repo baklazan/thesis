@@ -37,7 +37,7 @@ class tombo_kmer_model:
       for kmer, value in kmer_model.items():
         id = kmer_to_id(kmer)
         self.mean[id] = value[0]
-        self.sigma[id] = value[1]
+        self.sigma[id] = value[1] * 1.5
         self.add[id] = np.log(1 / np.sqrt(2 * np.pi * self.sigma[id] ** 2))
 
   def median_filter(self, a, radius=7):
@@ -50,7 +50,7 @@ class tombo_kmer_model:
     normalization_meta = file['Analyses/RawGenomeCorrected_000/BaseCalled_template'].attrs
     scale = normalization_meta['scale']
     shift = normalization_meta['shift']
-    return np.clip(self.median_filter((raw_signal - shift) / scale, 7), -4, 4)
+    return np.clip(self.median_filter((raw_signal - shift) / scale, 1), -4, 4)
 
   def log_chance_of_signal(self, kmer, value, stdv=None):
     if not isinstance(kmer, int):

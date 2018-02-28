@@ -1,6 +1,7 @@
 from kmer_model import *
 from base import *
 import random
+import matplotlib.pyplot as plt
 
 class max_operation:
   def __init__(self):
@@ -42,7 +43,7 @@ class log_sum_operation:
 
 
 class window_model:
-  def __init__(self, kmer_model = None, window_size = 15, min_event_length = 3, max_event_length = 30, op = None):
+  def __init__(self, kmer_model = None, window_size = 13, min_event_length = 3, max_event_length = 30, op = None, buffer_size = 1, penalty = 1.0):
     self.window_size = window_size
     self.min_event_length = min_event_length
     self.max_event_length = max_event_length
@@ -50,12 +51,14 @@ class window_model:
     self.op = op
     if op == None:
       self.op = max_operation()
+    self.buffer_size = buffer_size
+    self.penalty = penalty
 
-  def reresquiggle(self, signal, reference_kmer_ids, start_buffer=0, end_buffer=0):
-    print("st: {} en: {}".format(start_buffer, end_buffer))
+  def reresquiggle(self, signal, reference_kmer_ids, start_buffer=0, end_buffer=0, plot = None):
     dp = np.full((len(signal) + 1, len(reference_kmer_ids) + 1), self.op.neutral_element(), dtype=float)
+    reconstruct_length = np.full((len(signal) + 1, len(reference_kmer_ids) + 1), -1, dtype=int)
     for j in range(start_buffer+1):
-      dp[j][0] = self.op.start_element()
+      dp[j][0] = self.op.start_element()-j
     for i, kmer_id in enumerate(reference_kmer_ids):
       for j in range(len(signal) + 1):
         accumulator = 0
@@ -63,31 +66,89 @@ class window_model:
           p = self.kmer_model.log_chance_of_signal(kmer_id, signal[j-l])
           accumulator = self.op.append_combine(p, accumulator)
           if l >= self.min_event_length:
+            if self.op.append_combine(dp[j-l][i], accumulator) > dp[j][i+1]:
+              reconstruct_length[j][i+1] = l
             dp[j][i + 1] = self.op.combine(dp[j][i+1], self.op.append_combine(dp[j-l][i], accumulator))
+    for i in range(end_buffer+1):
+      dp[-i-1, -1] -= i
     res = np.max(dp[-end_buffer-1:, -1])
+    if plot != None:
+      events = []
+      cur = np.argmax(dp[-end_buffer-1:, -1]) + len(signal) -end_buffer
+      for i in range(len(reference_kmer_ids), 0, -1):
+        l = reconstruct_length[cur][i]
+        events.append((cur - l, l))
+        cur -= l
+      x = []
+      y = []
+      events.reverse()
+      for i, e in enumerate(events):
+        for j in range(e[0], e[0]+e[1]):
+          x.append(j)
+          y.append(self.kmer_model.mean[reference_kmer_ids[i]])
+
+      plot.plot(signal)
+      plot.plot(x, y)
     return res
 
   def update_base(self, reference, base, signal_values, start_buffer, end_buffer):
     ref_st = base.id - self.window_size // 2 - self.kmer_model.central_position
     ref_en = ref_st + self.window_size + self.kmer_model.k - 1
-    if ref_st < 0 or ref_en >= len(reference):
+    if ref_st < 0 or ref_en > len(reference):
       return
-    context = list(reference[ref_st+1:ref_en-1])
+    context = list(reference[ref_st:ref_en])
     for i, c in enumerate(alphabet):
-      context[self.kmer_model.central_position + self.window_size // 2 - 1] = c
-      kmer_ids = [kmer_to_id(context[j:j + self.kmer_model.k]) for j in range(len(context) - self.kmer_model.k - 1)]
+      context[self.kmer_model.central_position + self.window_size // 2] = c
+      kmer_ids = [kmer_to_id(context[j:j + self.kmer_model.k]) for j in range(len(context) - self.kmer_model.k + 1)]
       base.log_probability[i] += self.reresquiggle(signal_values, kmer_ids, start_buffer, end_buffer)
+
+  def show_base(self, reference, read, base):
+    id_in_read = base.id - read.start_in_reference
+    kmer_start_id = id_in_read - self.window_size // 2
+    kmer_end_id = id_in_read + self.window_size // 2
+    signal_start_id = kmer_start_id - self.buffer_size
+    signal_end_id = kmer_end_id + self.buffer_size
+    if signal_start_id < 0 or signal_end_id >= len(read.event_start):
+      return
+    signal_start = read.event_start[signal_start_id]
+    signal_end = read.event_start[signal_end_id] + read.event_length[signal_end_id]
+    signals = read.normalized_signal[signal_start:signal_end]
+    start_buffer = read.event_start[signal_start_id + 2 * self.buffer_size] - signal_start
+    end_buffer = signal_end - (read.event_start[signal_end_id - 2 * self.buffer_size] + read.event_length[
+      signal_end_id - 2 * self.buffer_size])
+    context_st = base.id - self.window_size // 2 - self.kmer_model.central_position
+    context_en = context_st + self.window_size + self.kmer_model.k - 1
+    if context_st < 0 or context_en > len(reference):
+      return
+    context = list(reference[context_st:context_en])
+    rows = np.floor(np.sqrt(len(alphabet)))
+    columns = np.ceil(len(alphabet) / rows)
+    plt.figure()
+    plt.suptitle("{}: {}<-{}".format(base.id, base.reference_value, base.real_value))
+    plots = [plt.subplot(rows, columns, i + 1) for i in range(len(alphabet))]
+    for i, c in enumerate(alphabet):
+      context[self.kmer_model.central_position + self.window_size // 2] = c
+      kmer_ids = [kmer_to_id(context[j:j + self.kmer_model.k]) for j in range(len(context) - self.kmer_model.k + 1)]
+      plots[i].set_title("{} {}".format(c, base.log_probability[i]))
+      self.reresquiggle(signals, kmer_ids, start_buffer, end_buffer, plots[i])
+    plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+    plt.show()
+
 
   def update_probabilities(self, reference, read, interesting_bases):
     for base in interesting_bases:
       id_in_read = base.id - read.start_in_reference
-      if id_in_read - self.window_size // 2 < 0 or id_in_read + self.window_size // 2 >= len(read.event_start):
+      kmer_start_id = id_in_read - self.window_size // 2
+      kmer_end_id = id_in_read + self.window_size // 2
+      signal_start_id = kmer_start_id - self.buffer_size
+      signal_end_id = kmer_end_id + self.buffer_size
+      if signal_start_id < 0 or signal_end_id >= len(read.event_start):
         continue
-      start = read.event_start[id_in_read - self.window_size // 2]
-      end = read.event_start[id_in_read + self.window_size // 2] + read.event_length[id_in_read + self.window_size // 2]
-      signals = read.normalized_signal[start:end]
-      start_buffer = read.event_start[id_in_read - self.window_size // 2 + 2] - start
-      end_buffer = end - read.event_start[id_in_read + self.window_size // 2 - 1]
+      signal_start = read.event_start[signal_start_id]
+      signal_end = read.event_start[signal_end_id] + read.event_length[signal_end_id]
+      signals = read.normalized_signal[signal_start:signal_end]
+      start_buffer = read.event_start[signal_start_id + 2*self.buffer_size] - signal_start
+      end_buffer = signal_end - (read.event_start[signal_end_id - 2*self.buffer_size] + read.event_length[signal_end_id - 2*self.buffer_size])
       self.update_base(reference, base, signals, start_buffer, end_buffer)
 
 class no_model:
