@@ -29,7 +29,7 @@ elif args.kmer_model == "picoamp":
   kmer_model = picoamp_kmer_model("data/6mer_model.txt")
 else:
   raise ValueError("Unknown kmer model: {}".format(args.kmer_model))
-model = window_model(kmer_model, op = max_operation(), buffer_size=4, min_event_length=2, max_event_length=60, window_size=13)
+model = window_model(kmer_model, op = max_operation(), buffer_size=8, min_event_length=2, window_size=23, penalty=0.5)
 reference = load_fasta(args.reference)[0].bases
 interesting = load_interesting_bases(args.interesting, reference)
 

@@ -41,12 +41,18 @@ class log_sum_operation:
   def append_combine(self, a, b):
     return a + b
 
+def log_average(a, b):
+  if np.isinf(a) and np.isinf(b):
+    return -np.isinf
+  if a < b:
+    return b + np.log(1 + np.exp(a - b)) - np.log(2)
+  else:
+    return a + np.log(1 + np.exp(b - a)) - np.log(2)
 
 class window_model:
-  def __init__(self, kmer_model = None, window_size = 13, min_event_length = 3, max_event_length = 30, op = None, buffer_size = 1, penalty = 1.0):
+  def __init__(self, kmer_model = None, window_size = 13, min_event_length = 3, op = None, buffer_size = 1, penalty = 1.0):
     self.window_size = window_size
     self.min_event_length = min_event_length
-    self.max_event_length = max_event_length
     self.kmer_model = kmer_model
     self.op = op
     if op == None:
@@ -55,34 +61,54 @@ class window_model:
     self.penalty = penalty
 
   def reresquiggle(self, signal, reference_kmer_ids, start_buffer=0, end_buffer=0, plot = None):
-    dp = np.full((len(signal) + 1, len(reference_kmer_ids) + 1), self.op.neutral_element(), dtype=float)
-    reconstruct_length = np.full((len(signal) + 1, len(reference_kmer_ids) + 1), -1, dtype=int)
+    dp = np.full((len(signal) + 1, len(reference_kmer_ids)*2), self.op.neutral_element(), dtype=float)
+    reconstruct_length = np.full((len(signal) + 1, len(reference_kmer_ids)*2), -1, dtype=int)
     for j in range(start_buffer+1):
-      dp[j][0] = self.op.start_element()-j
+      dp[j][0] = self.op.start_element()-j*self.penalty
     for i, kmer_id in enumerate(reference_kmer_ids):
-      for j in range(len(signal) + 1):
+      for j in range(self.min_event_length, len(signal) + 1):
         accumulator = 0
-        for l in range(1, min(self.max_event_length, j) + 1):
+        for l in range(1, self.min_event_length + 1):
           p = self.kmer_model.log_chance_of_signal(kmer_id, signal[j-l])
           accumulator = self.op.append_combine(p, accumulator)
-          if l >= self.min_event_length:
-            if self.op.append_combine(dp[j-l][i], accumulator) > dp[j][i+1]:
-              reconstruct_length[j][i+1] = l
-            dp[j][i + 1] = self.op.combine(dp[j][i+1], self.op.append_combine(dp[j-l][i], accumulator))
+        val_if_shortest = self.op.append_combine(dp[j-self.min_event_length][i*2], accumulator)
+        if val_if_shortest > dp[j][i*2 + 1]:
+          reconstruct_length[j][i*2+1] = self.min_event_length
+        dp[j][i*2 + 1] = self.op.combine(dp[j][i*2+1], val_if_shortest)
+        p = self.kmer_model.log_chance_of_signal(kmer_id, signal[j-1])
+        val_if_long = self.op.append_combine(dp[j-1][i*2+1], p)
+        if val_if_long > dp[j][i*2+1]:
+          reconstruct_length[j][i*2+1] = reconstruct_length[j-1][i*2+1] + 1
+        dp[j][i*2 + 1] = self.op.combine(dp[j][i*2+1], val_if_long)
+      if i+1 < len(reference_kmer_ids):
+        for j in range(len(signal) + 1):
+          val_if_no_flashback = dp[j][i*2+1]
+          if val_if_no_flashback > dp[j][i*2+2]:
+            reconstruct_length[j][i*2+2] = 0
+          dp[j][i*2+2] = self.op.combine(dp[j][i*2+2], val_if_no_flashback)
+          if j >= 1:
+            p1 = self.kmer_model.log_chance_of_signal(kmer_id, signal[j-1])
+            p2 = self.kmer_model.log_chance_of_signal(reference_kmer_ids[i+1], signal[j-1])
+            p = log_average(p1, p2)
+            val_if_flashback = self.op.append_combine(dp[j-1][i*2+2], p)
+            if val_if_flashback > dp[j][i*2+2]:
+              reconstruct_length[j][i*2+2] = reconstruct_length[j-1][i*2+2] + 1
+            dp[j][i*2+2] = self.op.combine(dp[j][i*2+2], val_if_flashback)
+
     for i in range(end_buffer+1):
-      dp[-i-1, -1] -= i
+      dp[-i-1][-1] -= i*self.penalty
     res = np.max(dp[-end_buffer-1:, -1])
     if plot != None:
       events = []
       cur = np.argmax(dp[-end_buffer-1:, -1]) + len(signal) -end_buffer
-      for i in range(len(reference_kmer_ids), 0, -1):
+      for i in range(len(reference_kmer_ids)*2-1, 0, -1):
         l = reconstruct_length[cur][i]
         events.append((cur - l, l))
         cur -= l
       x = []
       y = []
       events.reverse()
-      for i, e in enumerate(events):
+      for i, e in enumerate(events[0::2]):
         for j in range(e[0], e[0]+e[1]):
           x.append(j)
           y.append(self.kmer_model.mean[reference_kmer_ids[i]])
