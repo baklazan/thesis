@@ -3,6 +3,7 @@ import numpy as np
 from kmer_model import *
 import matplotlib.pyplot as plt
 from scipy import interpolate
+import c_wrapper
 
 
 class resquiggled_read:
@@ -34,8 +35,8 @@ class resquiggled_read:
       relative_start = events.attrs['read_start_rel_to_raw']
       events = events.value
       self.event_mean = np.array([e[0] for e in events])
-      self.event_start = np.array([e[2] + relative_start for e in events])
-      self.event_length = np.array([e[3] for e in events])
+      self.event_start = np.array([e[2] + relative_start for e in events], dtype=np.int32)
+      self.event_length = np.array([e[3] for e in events], dtype=np.int32)
       self.event_base = np.array([e[4] for e in events])
       
       self.normalized_signal = kmer_model.normalize_signal(self.raw_signal, f)
@@ -57,3 +58,14 @@ class resquiggled_read:
     y = [d[1] for d in data]
     fnc = interpolate.splrep(x, y, s=len(x))
     self.normalized_signal = interpolate.splev(self.normalized_signal, fnc)
+
+  def get_c_object(self):
+    return c_wrapper.new_ResquiggledRead(self.normalized_signal,
+                                        len(self.normalized_signal),
+                                        self.event_start,
+                                        self.event_length,
+                                        self.number_of_events,
+                                        self.start_in_reference)
+
+  def free_c_object(self, obj):
+    c_wrapper.delete_ResquiggledRead(obj)

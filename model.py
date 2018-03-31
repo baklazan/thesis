@@ -160,6 +160,30 @@ class window_model:
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
     plt.show()
 
+  def update_probabilities_c(self, reference, read, interesting_bases):
+    c_kmer_model = self.kmer_model.get_c_object()
+    c_read = read.get_c_object()
+
+    numeric_reference = np.array([inv_alphabet[i] for i in reference], dtype = np.int32)
+    interesting_positions = np.array([b.id for b in interesting_bases], dtype = np.int32)
+    result = np.zeros(4*len(interesting_bases), dtype=np.double)
+    c_wrapper.compute_probabilities(numeric_reference,
+                                    len(numeric_reference),
+                                    c_kmer_model,
+                                    c_read,
+                                    interesting_positions,
+                                    len(interesting_positions),
+                                    result,
+                                    self.min_event_length,
+                                    self.window_size // 2,
+                                    self.window_size // 2,
+                                    self.buffer_size,
+                                    self.penalty)
+    for i, b in enumerate(interesting_bases):
+      for j in range(len(alphabet)):
+        b.log_probability[j] += result[i*4 + j]
+    read.free_c_object(c_read)
+    self.kmer_model.free_c_object(c_kmer_model)
 
   def update_probabilities(self, reference, read, interesting_bases):
     for base in interesting_bases:

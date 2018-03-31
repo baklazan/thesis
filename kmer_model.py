@@ -1,9 +1,11 @@
 import h5py
 from alphabet import *
 import numpy as np
+import numpy.ctypeslib
 import copy
 import statistics
-
+import ctypes
+import c_wrapper
 
 def kmer_to_id(kmer):
   result = 0
@@ -31,13 +33,13 @@ class tombo_kmer_model:
       for l in model:
         kmer_model[l[0].decode("ascii")] = [l[1], l[2]]
         self.k = len(l[0].decode("ascii"))
-      self.mean = [None for i in kmer_model]
-      self.sigma = [None for i in kmer_model]
-      self.add = [None for i in kmer_model]
+      self.mean = np.zeros(len(kmer_model))
+      self.sigma = np.zeros(len(kmer_model))
+      self.add = np.zeros(len(kmer_model))
       for kmer, value in kmer_model.items():
         id = kmer_to_id(kmer)
         self.mean[id] = value[0]
-        self.sigma[id] = value[1] * 1.5
+        self.sigma[id] = value[1]
         self.add[id] = np.log(1 / np.sqrt(2 * np.pi * self.sigma[id] ** 2))
 
   def median_filter(self, a, radius=7):
@@ -56,6 +58,12 @@ class tombo_kmer_model:
     if not isinstance(kmer, int):
       kmer = kmer_to_id(kmer)
     return self.add[kmer] - ((value - self.mean[kmer]) ** 2) / ((2 * self.sigma[kmer] ** 2))
+
+  def get_c_object(self):
+    return c_wrapper.new_KmerModel(self.k, self.central_position, self.mean, self.sigma)
+
+  def free_c_object(self, obj):
+    c_wrapper.delete_KmerModel(obj)
 
 
 class picoamp_kmer_model:

@@ -38,7 +38,7 @@ for read_file in args.read:
   read = resquiggled_read(read_file, kmer_model)
   print("[{}, {})".format(read.start_in_reference, read.end_in_reference))
   read.tweak_normalization(reference, kmer_model)
-  model.update_probabilities(reference, read, interesting)
+  model.update_probabilities_c(reference, read, interesting)
   reads.append(read)
 
 for base in interesting:
