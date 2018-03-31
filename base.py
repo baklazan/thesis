@@ -44,6 +44,10 @@ class interesting_base:
   def __lt__(self, other):
     return self.id < other.id
 
+  def clear_probabilities(self):
+    self.log_probability = np.zeros(len(alphabet))
+    self.normalized_probability = None
+
 def load_interesting_bases(filename, reference):
   result = []
   with open(filename, "r") as f:
