@@ -7,14 +7,15 @@ import copy
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-o", "--output", help="output file for plot", default="plot.png")
+parser.add_argument("-s", "--scale", help="portion of plot to be shown", default="0.2")
 parser.add_argument("input", help="input file(s)", nargs="+")
 args = parser.parse_args()
 
 def plot_rocs(scores, labels):
   plt.xlabel("FAR")
   plt.ylabel("FRR")
-  plt.xlim((0, 0.2))
-  plt.ylim((0, 0.2))
+  plt.xlim((0, float(args.scale)))
+  plt.ylim((0, float(args.scale)))
   points = [(score, labels[i]) for i, score in enumerate(scores)]
   points.sort(reverse=True)
   total_positive = 0

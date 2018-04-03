@@ -139,7 +139,7 @@ for filename in args.input:
     for l in f:
       tokens = l.split()
       labels.append(tokens[0])
-      scores.append(np.array(list(map(float,tokens[1:]))))
+      scores.append(np.array(list(map(float,tokens[2:]))))
   plot_rocs(scores, labels, plots)
 
 plt.tight_layout(rect=[0, 0.03, 1, 0.95])

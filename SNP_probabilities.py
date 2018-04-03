@@ -45,7 +45,8 @@ interesting = load_interesting_bases(args.interesting, reference)
 
 read_files = [os.path.join(args.read_basedir, file) for file in os.listdir(args.read_basedir) if not os.path.isdir(os.path.join(args.read_basedir, file))]
 
-open(args.output, "w").close()
+if args.output:
+  open(args.output, "w").close()
 
 reads = []
 for read_file in read_files:
