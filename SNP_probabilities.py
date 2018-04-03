@@ -50,6 +50,7 @@ reference = load_fasta(args.reference)[0].bases
 interesting = load_interesting_bases(args.interesting, reference)
 
 read_files = [os.path.join(args.read_basedir, file) for file in os.listdir(args.read_basedir) if not os.path.isdir(os.path.join(args.read_basedir, file))]
+read_files = filter(lambda x : x[-6:] == ".fast5", read_files)
 
 if args.output:
   open(args.output, "w").close()
