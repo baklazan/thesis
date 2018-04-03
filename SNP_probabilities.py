@@ -53,8 +53,13 @@ for read_file in read_files:
     read = resquiggled_read(read_file, kmer_model)
   except KeyError:
     continue
+  read.fix_start_in_reference(reference)
+  if read.strand == '-':
+    read.tweak_normalization(reverse_complement(reference), kmer_model)
+  else:
+    read.tweak_normalization(reference, kmer_model)
   print("[{}, {})".format(read.start_in_reference, read.end_in_reference))
-  read.tweak_normalization(reference, kmer_model)
+
   model.update_probabilities_c(reference, read, interesting)
   reads.append(read)
   if args.independent:

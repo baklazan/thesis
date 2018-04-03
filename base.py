@@ -48,10 +48,20 @@ class interesting_base:
     self.log_probability = np.zeros(len(alphabet))
     self.normalized_probability = None
 
+  def sync_with_reverse_complement(self, comp):
+    for i, c in enumerate(alphabet):
+      self.log_probability[i] = comp.log_probability[inv_alphabet[complement[c]]]
+
 def load_interesting_bases(filename, reference):
   result = []
   with open(filename, "r") as f:
     for l in f:
       tokens = l.split()
       result.append(interesting_base(int(tokens[0]), reference, tokens[1]))
+  return result
+
+
+def reverse_complement_base(base, rc_reference):
+  result = interesting_base(len(rc_reference) - 1 - base.id, rc_reference, complement[base.real_value])
+  result.sync_with_reverse_complement(base)
   return result

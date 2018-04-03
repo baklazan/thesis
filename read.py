@@ -18,6 +18,7 @@ class resquiggled_read:
     self.event_base = None
     self.number_of_events = None
     self.read_id = None
+    self.strand = None
     if filename != None:
       self.load_from_fast5(filename, kmer_model)
   
@@ -29,7 +30,7 @@ class resquiggled_read:
       alignment_meta = f['Analyses/RawGenomeCorrected_000/BaseCalled_template/Alignment'].attrs
       self.start_in_reference = alignment_meta['mapped_start']
       self.end_in_reference = alignment_meta['mapped_end']
-      
+      self.strand = alignment_meta['mapped_strand'].decode('ascii')
       
       events = f['Analyses/RawGenomeCorrected_000/BaseCalled_template/Events']
       relative_start = events.attrs['read_start_rel_to_raw']
@@ -41,6 +42,10 @@ class resquiggled_read:
       
       self.normalized_signal = kmer_model.normalize_signal(self.raw_signal, f)
       self.number_of_events = len(events)
+
+  def fix_start_in_reference(self, reference):
+    if self.strand == '-':
+      self.start_in_reference, self.end_in_reference = len(reference) - self.end_in_reference, len(reference) - self.start_in_reference
 
   def tweak_normalization(self, reference, kmer_model):
     data = []

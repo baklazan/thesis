@@ -1,5 +1,6 @@
 from kmer_model import *
 from base import *
+from genome import reverse_complement
 import random
 import matplotlib.pyplot as plt
 
@@ -129,6 +130,10 @@ class window_model:
       base.log_probability[i] += self.reresquiggle(signal_values, kmer_ids, start_buffer, end_buffer)
 
   def show_base(self, reference, read, base):
+    original_base = base
+    if read.strand == '-':
+      reference = reverse_complement(reference)
+      base = reverse_complement_base(base, reference)
     id_in_read = base.id - read.start_in_reference
     kmer_start_id = id_in_read - self.window_size // 2
     kmer_end_id = id_in_read + self.window_size // 2
@@ -150,19 +155,25 @@ class window_model:
     rows = np.floor(np.sqrt(len(alphabet)))
     columns = np.ceil(len(alphabet) / rows)
     plt.figure()
-    plt.suptitle("{}: {}<-{}".format(base.id, base.reference_value, base.real_value))
+    plt.suptitle("{}: {}<-{} [{}]".format(original_base.id, original_base.reference_value, original_base.real_value, read.strand))
     plots = [plt.subplot(rows, columns, i + 1) for i in range(len(alphabet))]
     for i, c in enumerate(alphabet):
-      context[self.kmer_model.central_position + self.window_size // 2] = c
+      context[self.kmer_model.central_position + self.window_size // 2] = c if read.strand == '+' else complement[c]
       kmer_ids = [kmer_to_id(context[j:j + self.kmer_model.k]) for j in range(len(context) - self.kmer_model.k + 1)]
-      plots[i].set_title("{} {}".format(c, base.log_probability[i]))
-      self.reresquiggle(signals, kmer_ids, start_buffer, end_buffer, plots[i])
+      logp = self.reresquiggle(signals, kmer_ids, start_buffer, end_buffer, plots[i])
+      plots[i].set_title("{} {:6.2f} [{:6.2f}]".format(c, logp, original_base.log_probability[i]))
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
     plt.show()
 
   def update_probabilities_c(self, reference, read, interesting_bases):
     c_kmer_model = self.kmer_model.get_c_object()
     c_read = read.get_c_object()
+
+
+    if read.strand == '-':
+      reference = reverse_complement(reference)
+      original_interesting_bases = interesting_bases
+      interesting_bases = [reverse_complement_base(base, reference) for base in interesting_bases]
 
     numeric_reference = np.array([inv_alphabet[i] for i in reference], dtype = np.int32)
     interesting_positions = np.array([b.id for b in interesting_bases], dtype = np.int32)
@@ -182,11 +193,23 @@ class window_model:
     for i, b in enumerate(interesting_bases):
       for j in range(len(alphabet)):
         b.log_probability[j] += result[i*4 + j]
+
+    if read.strand == '-':
+      for i, base in enumerate(original_interesting_bases):
+        base.sync_with_reverse_complement(interesting_bases[i])
+
     read.free_c_object(c_read)
     self.kmer_model.free_c_object(c_kmer_model)
 
+
+
   def update_probabilities(self, reference, read, interesting_bases):
+    if read.strand == '-':
+      reference = reverse_complement(reference)
     for base in interesting_bases:
+      if read.strand == '-':
+        original_base = base
+        base = reverse_complement(base, reference)
       id_in_read = base.id - read.start_in_reference
       kmer_start_id = id_in_read - self.window_size // 2
       kmer_end_id = id_in_read + self.window_size // 2
@@ -200,6 +223,8 @@ class window_model:
       start_buffer = read.event_start[signal_start_id + 2*self.buffer_size] - signal_start
       end_buffer = signal_end - (read.event_start[signal_end_id - 2*self.buffer_size] + read.event_length[signal_end_id - 2*self.buffer_size])
       self.update_base(reference, base, signals, start_buffer, end_buffer)
+      if read.strand == '-':
+        original_base.sync_with_reverse_complement(base)
 
 class no_model:
   def __init__(self, kmer_model = None):

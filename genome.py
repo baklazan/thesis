@@ -1,3 +1,5 @@
+from alphabet import complement
+
 class genome:
   def __init__(self, desc_line = None):
     self.bases = []
@@ -17,4 +19,8 @@ def load_fasta(filename):
       else:
         current.append_line(l.rstrip())
   return result
-  
+
+def reverse_complement(r):
+  res = [complement[x] for x in r]
+  res.reverse()
+  return res
