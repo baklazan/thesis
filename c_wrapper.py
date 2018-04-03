@@ -39,4 +39,5 @@ compute_probabilities.argtypes = [ndpointer(ctypes.c_int, flags='C_CONTIGUOUS'),
                                   ctypes.c_int,
                                   ctypes.c_int,
                                   ctypes.c_int,
-                                  ctypes.c_double]
+                                  ctypes.c_double,
+                                  ctypes.c_bool]

@@ -10,6 +10,7 @@ from alphabet import *
 from kmer_model import *
 from base import *
 from model import *
+import yaml
 import os
 
 parser = argparse.ArgumentParser()
@@ -18,6 +19,7 @@ parser.add_argument("-p", "--print_worst", help="print worst n candidates")
 parser.add_argument("-s", "--show_worst", help="number of worst positions to show (only works with --print_best)")
 parser.add_argument("-i", "--independent", help="treat each read independently", action='store_true')
 parser.add_argument("-k", "--kmer_model", help="file with kmer model to use", default="tombo")
+parser.add_argument("-c", "--configuration", help="config file with reresquiggle parameters", default="default.yaml")
 parser.add_argument("reference", help="reference fasta file")
 parser.add_argument("interesting", help="list of interesting positions in reference")
 parser.add_argument("read_basedir", help="base directory of resquiggled fast5 files")
@@ -39,7 +41,11 @@ elif args.kmer_model == "picoamp":
   kmer_model = picoamp_kmer_model("data/6mer_model.txt")
 else:
   raise ValueError("Unknown kmer model: {}".format(args.kmer_model))
-model = window_model(kmer_model, op = max_operation(), buffer_size=8, min_event_length=2, window_size=23, penalty=0.5)
+
+with open(args.configuration, "r") as f:
+  config = yaml.load(f)
+
+model = window_model(kmer_model, op = max_operation(), config = config)
 reference = load_fasta(args.reference)[0].bases
 interesting = load_interesting_bases(args.interesting, reference)
 

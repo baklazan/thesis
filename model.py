@@ -51,15 +51,16 @@ def log_average(a, b):
     return a + np.log(1 + np.exp(b - a)) - np.log(2)
 
 class window_model:
-  def __init__(self, kmer_model = None, window_size = 13, min_event_length = 3, op = None, buffer_size = 1, penalty = 1.0):
-    self.window_size = window_size
-    self.min_event_length = min_event_length
+  def __init__(self, kmer_model = None, op = None, config = None):
+    self.min_event_length = config['min_event_length']
+    self.window_size = config['window_size']
+    self.buffer_size = config['buffer_size']
+    self.penalty = config['penalty']
+    self.flashbacks = config['flashbacks']
     self.kmer_model = kmer_model
     self.op = op
     if op == None:
       self.op = max_operation()
-    self.buffer_size = buffer_size
-    self.penalty = penalty
 
   def reresquiggle(self, signal, reference_kmer_ids, start_buffer=0, end_buffer=0, plot = None):
     dp = np.full((len(signal) + 1, len(reference_kmer_ids)*2), self.op.neutral_element(), dtype=float)
@@ -189,7 +190,8 @@ class window_model:
                                     self.window_size // 2,
                                     self.window_size // 2,
                                     self.buffer_size,
-                                    self.penalty)
+                                    self.penalty,
+                                    self.flashbacks)
     for i, b in enumerate(interesting_bases):
       for j in range(len(alphabet)):
         b.log_probability[j] += result[i*4 + j]

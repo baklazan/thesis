@@ -73,10 +73,10 @@ double log_average(double a, double b)
 	return a + log(1 + exp(b - a)) - log(2);
 }
 
-double reresquiggle(double *signal, int signal_length, vector<int> kmer_ids, int start_buffer, int end_buffer, KmerModel *kmer_model, int min_event_length, double penalty)
+double reresquiggle_flashback(double *signal, int signal_length, vector<int> kmer_ids, int start_buffer, int end_buffer, KmerModel *kmer_model, int min_event_length, double penalty)
 {
 	vector<vector<double> > dp(kmer_ids.size()*2, vector<double>(signal_length+1 ,-numeric_limits<double>::infinity()));
-	for(int x=0; x<start_buffer; x++)
+	for(int x=0; x<=start_buffer; x++)
 	{
 		dp[0][x] = -x * penalty;
 	}
@@ -111,12 +111,45 @@ double reresquiggle(double *signal, int signal_length, vector<int> kmer_ids, int
 	return res;
 }
 
+double reresquiggle(double *signal, int signal_length, vector<int> kmer_ids, int start_buffer, int end_buffer, KmerModel *kmer_model, int min_event_length, double penalty)
+{
+	vector<vector<double> > dp(kmer_ids.size()+1, vector<double>(signal_length+1 ,-numeric_limits<double>::infinity()));
+	for(int x=0; x<=start_buffer; x++)
+	{
+		dp[0][x] = -x * penalty;
+	}
+	
+	for(int y=0; y<kmer_ids.size(); y++)
+	{
+		for(int x=min_event_length; x<=signal_length; x++)
+		{
+			double start_price = 0;
+			for(int i=1; i<=min_event_length; i++)
+			{
+				start_price += kmer_model->log_chance_of_signal(signal[x-i], kmer_ids[y]);
+			}
+			double continue_price = kmer_model->log_chance_of_signal(signal[x-1], kmer_ids[y]);
+			dp[y+1][x] = max(dp[y+1][x-1] + continue_price, dp[y][x-min_event_length] + start_price);
+		}
+	}
+	double res = -numeric_limits<double>::infinity();
+	for(int x=signal_length - end_buffer; x <= signal_length; x++)
+	{
+		res = max(res, dp.back()[x] - (signal_length-x)*penalty);
+	}
+	return res;
+}
+
+
+
 extern "C"
 {
 	void compute_probabilities(int *reference, int reference_length, KmerModel *kmer_model, 
 	                           ResquiggledRead *read, int *interesting_positions, int interesting_count, double *result,
-	                           int min_event_length, int window_before, int window_after, int buffer_size, double penalty)
+	                           int min_event_length, int window_before, int window_after, int buffer_size, double penalty,
+	                           bool flashbacks)
 	{
+		double (*reresquiggle_func)(double*, int, vector<int>, int, int, KmerModel*, int, double) = flashbacks ? reresquiggle_flashback : reresquiggle;
 		for(int i=0; i<interesting_count; i++)
 		{
 			int pos = interesting_positions[i];
@@ -144,7 +177,7 @@ extern "C"
 				{
 					kmer_ids.push_back(kmer_model->kmer_id(&reference[j]));
 				}
-				result[i * 4 + letter] = reresquiggle(&(read->signal[st_in_signal]),
+				result[i * 4 + letter] = reresquiggle_func(&(read->signal[st_in_signal]),
 				                                 en_in_signal - st_in_signal, 
 				                                 kmer_ids, 
 				                                 start_buffer, 
