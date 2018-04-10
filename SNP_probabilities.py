@@ -62,10 +62,11 @@ for read_file in read_files:
   except KeyError:
     continue
   read.fix_start_in_reference(reference)
-  if read.strand == '-':
-    read.tweak_normalization(reverse_complement(reference), kmer_model)
-  else:
-    read.tweak_normalization(reference, kmer_model)
+  if config['tweak_normalization']:
+    if read.strand == '-':
+      read.tweak_normalization(reverse_complement(reference), kmer_model)
+    else:
+      read.tweak_normalization(reference, kmer_model)
   print("[{}, {})".format(read.start_in_reference, read.end_in_reference))
 
   model.update_probabilities_c(reference, read, interesting)

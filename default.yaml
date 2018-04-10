@@ -3,3 +3,4 @@ min_event_length: 2
 window_size: 23
 penalty: 0.5
 flashbacks: True
+tweak_normalization: True
