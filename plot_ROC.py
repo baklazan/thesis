@@ -30,11 +30,13 @@ def plot_rocs(scores, labels):
   best_frr = 1
   false_accepted = 0
   false_rejected = total_positive
-  for p in points:
+  for i, p in enumerate(points):
     if p[1] == 'positive':
       false_rejected -= 1
     else:
       false_accepted += 1
+    if i+1 < len(points) and points[i+1][0] == points[i][0]:
+      continue
     frr = false_rejected / total_positive
     far = false_accepted / total_negative
     if frr < best_frr:
@@ -43,7 +45,10 @@ def plot_rocs(scores, labels):
       best_frr = frr
   x.append(1.0)
   y.append(0.0)
-  plt.plot(x, y)
+  if len(x) > 100:
+    plt.plot(x, y)
+  else:
+    plt.plot(x, y, linewidth=0.2, markersize=2, marker='o')
 
 
 plt.suptitle("ROC")

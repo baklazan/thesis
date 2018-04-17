@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import argparse
 from genome import *
 from read import *
+from bc_read import *
 from alphabet import *
 from kmer_model import *
 from base import *
@@ -19,6 +20,8 @@ parser.add_argument("-p", "--print_worst", help="print worst n candidates")
 parser.add_argument("-s", "--show_worst", help="number of worst positions to show (only works with --print_best)")
 parser.add_argument("-i", "--independent", help="treat each read independently", action='store_true')
 parser.add_argument("-k", "--kmer_model", help="file with kmer model to use", default="tombo")
+parser.add_argument("-g", "--group_name", help="name of group in fast5 files containing basecall info", default="Analyses/Basecall_1D_000")
+parser.add_argument("-b", "--basecall_only", help="only use basecalled sequence to determine SNPs (ignore signal)", action='store_true')
 parser.add_argument("-c", "--configuration", help="config file with reresquiggle parameters", default="default.yaml")
 parser.add_argument("reference", help="reference fasta file")
 parser.add_argument("interesting", help="list of interesting positions in reference")
@@ -45,7 +48,15 @@ else:
 with open(args.configuration, "r") as f:
   config = yaml.load(f)
 
-model = window_model(kmer_model, op = max_operation(), config = config)
+load_read = None
+if args.basecall_only:
+  model = basecall_model(args.reference, config)
+  load_read = lambda read_file, kmer_model, group_name : basecalled_read(filename=read_file, kmer_model = kmer_model, basecall_group=group_name)
+
+else:
+  model = window_model(kmer_model, config = config)
+  load_read = lambda read_file, kmer_model, group_name : resquiggled_read(filename=read_file, kmer_model = kmer_model)
+
 reference = load_fasta(args.reference)[0].bases
 interesting = load_interesting_bases(args.interesting, reference)
 
@@ -58,8 +69,9 @@ if args.output:
 reads = []
 for read_file in read_files:
   try:
-    read = resquiggled_read(read_file, kmer_model)
+    read = load_read(read_file, kmer_model, args.group_name)
   except KeyError:
+    print('failed to process read {}'.format(read_file))
     continue
   read.fix_start_in_reference(reference)
   if config['tweak_normalization']:
@@ -69,7 +81,7 @@ for read_file in read_files:
       read.tweak_normalization(reference, kmer_model)
   print("[{}, {})".format(read.start_in_reference, read.end_in_reference))
 
-  model.update_probabilities_c(reference, read, interesting)
+  model.update_probabilities(reference, read, interesting)
   reads.append(read)
   if args.independent:
     if args.output:

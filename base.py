@@ -15,7 +15,7 @@ class interesting_base:
   
   def get_normalized_probability(self):
     if self.normalized_probability is None:
-      shifted = (self.log_probability - np.max(self.log_probability))/5
+      shifted = (self.log_probability - np.max(self.log_probability))
       p = np.exp(shifted)
       sum = np.sum(p)
       self.normalized_probability = p / sum

@@ -14,10 +14,28 @@ def load_fasta(filename):
     current = None
     for l in f:
       if l[0] == '>':
-        current = genome(l)
+        current = genome(l.rstrip())
         result.append(current)
       else:
         current.append_line(l.rstrip())
+  return result
+
+def load_fastq(filename):
+  with open(filename, 'r') as f:
+    return parse_fastq(f)
+
+def parse_fastq(lines):
+  result = []
+  state = 'balast'
+  current = None
+  for l in lines:
+    if len(l) > 0 and l[0] == '@':
+      current = genome(l)
+      result.append(current)
+      state = 'sequence'
+    elif state == 'sequence':
+      current.append_line(l.rstrip())
+      state = 'balast'
   return result
 
 def reverse_complement(r):
