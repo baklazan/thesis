@@ -6,6 +6,7 @@ import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-c", "--changed", help="print list of changed positions into file")
+parser.add_argument("-u", "--unchanged", help="also print some unchanged positions into the same file")
 parser.add_argument("-n", "--number", help="number of changes to make")
 parser.add_argument("-p", "--percentage", help="percentage of changes to make (doesn't work if --number is used)")
 parser.add_argument("reference", help="reference fasta file")
@@ -65,17 +66,26 @@ else:
 
 ref_array = list(reference)
 
+not_to_be_changed = [False for x in ref_array]
+
+window_size = 21
 changes = []
 if args.number:
   for i in range(int(args.number)):
     index = valid_positoins[random.randrange(len(valid_positoins))]
+    while not_to_be_changed[index]:
+      index = valid_positoins[random.randrange(len(valid_positoins))]
     changes.append((index, ref_array[index]))
     ref_array[index] = something_else(ref_array[index])
+    for j in range(index - window_size // 2, index + window_size//2+1):
+      not_to_be_changed[j] = True
 elif args.percentage:
   for index in valid_positoins:
     if random.randrange(100) < args.percentage:
       changes.append((index, ref_array[index]))
       ref_array[index] = something_else(ref_array[index])
+      for j in range(index - window_size // 2, index + window_size//2+1):
+        not_to_be_changed[j] = True
 else:
   print("Neither --number nor --percentage were specified")
   sys.exit(1)
@@ -88,7 +98,16 @@ with open(args.output, "w") as f:
   for l in reference_tail:
     f.write(l)
 
+
 if args.changed:
   with open(args.changed, "w") as f:
     for c in changes:
       f.write("{} {}\n".format(c[0], c[1]))
+    if args.unchanged:
+      used = {}
+      for c in range(int(args.unchanged)):
+        index = valid_positoins[random.randrange(len(valid_positoins))]
+        while not_to_be_changed[index]:
+          index = valid_positoins[random.randrange(len(valid_positoins))]
+        f.write("{} {}\n".format(index, ref_array[index]))
+        not_to_be_changed[index] = True
