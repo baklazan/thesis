@@ -27,11 +27,10 @@ nízkou cenou a dostupnosťou prvých dát už počas sekvenovania, ale aj veľk
 jednotlivých čítaniach. Pri nanopórovom sekvenovaní sa vo vhodne zvolenej membráne vytvorí 
 \emph{nanopór}, t. j. otvor s priemerom rádovo $1 \si{nm}$. Membránou sa oddelia dve komory s 
 elektrolytom, pričom v jednej z komôr sa nachádza aj predpripravená vzorka DNA.
-Po zavedení elektrického napätia medzi komorami začne nanopórom tiecť iónový prúd. Vďaka elektroforéze a 
-za pomoci enzýmov sa jedno vlákno DNA postupne oddeľuje od druhého a prechádza nanopórom. Časť vlákna, 
+Po zavedení elektrického napätia medzi komorami začne nanopórom tiecť iónový prúd. Jedno vlákno DNA sa postupne oddeľuje od druhého a prechádza nanopórom. Časť vlákna, 
 ktorá sa práve nachádza v najužšej časti nanopóru, má vplyv na elektrický prúd tečúci cez nanopór. Rôzne 
 bázy ovplyvňujú elektrický prúd rôznym spôsobom. Pri sekvenovaní sa meria priebeh elektrického prúdu v 
-čase a na základe jeho zmien sa potom určuje, aké bázy prešli cez nanopór.
+čase a na základe jeho zmien sa potom určuje, aké bázy prešli cez nanopór \cite{Branton2008}.
 
 %TODO: obrázok
 
@@ -81,7 +80,7 @@ lepšie riešenia. Programy, ktoré určujú bázy, nazývame \emph{basecallery}
 Pri určovaní báz sa využíva fakt, že rôzne bázy pri svojom prechode nanopórom ovplyvňujú signál
 rôznym charakteristickým spôsobom. V praxi však signál nie je ovplyvnený iba jednou bázou. Pracuje
 sa preto s predpokladom, že signál je ovplyvnený $k$ po sebe idúcimi bázami, ktoré sú práve najbližšie
-k nanopóru. Skupinám $k$ po sebe idúcich báz sa hovorí \emph{$k$-mery}.
+k nanopóru. Skupinám $k$ po sebe idúcich báz sa hovorí \emph{\kmer{y}}.
 
 Ďalším problémom je, že vlákno DNA cez nanopór neprechádza konštantnou rýchlosťou. Jednotlivým bázam vo 
 výslednej postupnosti preto môžu zodpovedať rôzne dlhé úseky signálu. Prvým krokom pri určovaní báz 
@@ -94,13 +93,13 @@ neposunulo, prípadne posunulo o viac než jednu bázu.
 %TODO: obrázok
 
 Niektoré basecallery (napr. Nanocall \cite{Nanocall2017}) modelujú prechod DNA vlákna nanopórom ako 
-skrytý Markovovský model. Skrytým stavom je $k$-mer, ktorý sa práve nachádza v nanopóre a ovplyvňuje 
-signál. Viditeľným výstupom modelu sú udalosti. Z každého stavu ($k$-meru) sú možné prechody do štyroch 
-$k$-merov, ktoré po ňom môžu nasledovať. Napríklad pre $k=6$ sa zo stavu \texttt{ACCGCT} dá prejsť do
+skrytý Markovovský model. Skrytým stavom je \kmer{}, ktorý sa práve nachádza v nanopóre a ovplyvňuje 
+signál. Viditeľným výstupom modelu sú udalosti. Z každého stavu (\kmer{u}) sú možné prechody do štyroch 
+\kmer{ov}, ktoré po ňom môžu nasledovať. Napríklad pre $k=6$ sa zo stavu \texttt{ACCGCT} dá prejsť do
 stavov \texttt{CCGCTA}, \texttt{CCGCTC}, \texttt{CCGCTG} a \texttt{CCGCTT}. Okrem toho je ešte, s menšou 
 pravdepodobnosťou, možný prechod naspäť do toho istého stavu (modelujúci udalosti, pri ktorých sa DNA 
 vlákno neposunulo) a prechody modelujúce posun o viac ako jednu bázu. Pravdepodobnostné distribúcie 
-hodnoty signálu pre jednotlivé $k$-mery poskytuje výrobca MinIONa \cite{KmerModels}. Na základe tohto
+hodnoty signálu pre jednotlivé \kmer{y} poskytuje výrobca MinIONa \cite{KmerModels}. Na základe tohto
 modelu sa Viterbiho algoritmom vypočíta najpravdepodobnejšia postupnosť báz, ktorá mohla vygenerovať 
 pozorovaný signál.
 
@@ -112,32 +111,19 @@ Najlepšie súčasné basecallery majú pre jedno čítanie presnosť okolo $85\
 
 \section{Varianty v DNA}
 
-V prírode sa často vyskytujú dvojice DNA molekúl, ktoré obsahujú veľmi podobnú postupnosť báz, líšiacu sa iba v malých detailoch. Typickým príkladom sú DNA dvoch rôznych jedincov rovnakého druhu. Tieto malé odlišnosti v DNA voláme \emph{varianty}. Najjednoduchšie druhy variantov sú nasledovné.
+V prírode sa často vyskytujú dvojice DNA molekúl, ktoré obsahujú veľmi podobnú postupnosť báz, líšiacu sa iba v malých detailoch. Typickým príkladom sú DNA dvoch rôznych jedincov rovnakého druhu. Tieto malé odlišnosti v DNA voláme \emph{varianty}. Najjednoduchšie druhy variantov sú nasledujúce.
 
 \begin{description}
 \item [Jednonukleotidový polymorfizmus (SNP\footnotemark).]\footnotetext{z anglického \emph{\textbf{s}ingle \textbf{n}ucleotide \textbf{p}olymorphism}} Jedna báza z prvej DNA postupnosti sa v druhej postupnosti nahradí inou bázou.
 
-\begin{center}
-\texttt{ACCACTG\textbf{\hl{G}}ACTTTCGA \\
-ACCACTG\textbf{\hl{C}}ACTTTCGA
-}
-\end{center}
-
 \item [Inzercia.] Do postupnosti je vsunutá skupina báz.
-
-\begin{center}
-\texttt{ACCACTG\hl{ }GACTTTCGA \\
-ACCACTG\textbf{\hl{AT}}GACTTTCGA
-}
-\end{center}
 
 \item [Delécia.] Z postupnosti vypadne súvislá skupina báz.
 
-\begin{center}
-\texttt{ACCACT\textbf{\hl{GG}}ACTTTCGA \\
-ACCACT\hl{ }ACTTTCGA
-}
-\end{center}
-
-
 \end{description}
+
+\begin{figure}
+\centerline{\includegraphics[width=0.4\textwidth]{images/varianty}}
+\caption[Varianty v DNA.]{Jednonukleotidový polymorfyzmus, inzercia a delécia.}
+\label{obr:varianty}
+\end{figure}

@@ -14,10 +14,13 @@
 \usepackage{siunitx}
 \linespread{1.25} % hodnota 1.25 by mala zodpovedat 1.5 riadkovaniu
 
+
 \newcommand{\median}[2]{
 \mathrm{MEDIAN}_{#1}^{#2}
 }
 \DeclarePairedDelimiter\abs{\lvert}{\rvert}
+\newcommand{\kmer}[1]{$k$-mer#1}
+\newcommand{\bazy}{\{\texttt{A}, \texttt{C}, \texttt{G}, \texttt{T}\}}
 
 \hyphenation{MinION}
 \hyphenation{MinIONa}
@@ -233,8 +236,6 @@ Slovak translation of abstract coming here.
 \input identifikacia_indel.tex
 
 \input testovanie.tex
-
-\input implementacia.tex
 
 \input zaver.tex
 
