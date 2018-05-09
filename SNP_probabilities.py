@@ -45,6 +45,8 @@ if args.kmer_model == "tombo":
   kmer_model = tombo_kmer_model("data/tombo.DNA.model")
 elif args.kmer_model == "picoamp":
   kmer_model = picoamp_kmer_model("data/6mer_model.txt")
+elif args.kmer_model == "klebs":
+  kmer_model = tombo_kmer_model("data/klebs2of6.DNA.model")
 else:
   raise ValueError("Unknown kmer model: {}".format(args.kmer_model))
 
