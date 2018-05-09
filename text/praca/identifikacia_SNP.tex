@@ -1,6 +1,110 @@
 \chapter{Identifikácia jednonukleotidových polymorfizmov}
 
-\label{kap:identifikacia_SNP} % id kapitoly pre prikaz ref
+\label{kap:identifikacia_SNP} 
 
 V tejto časti navrhneme techniku na odhaľovanie jednonukleotidových
-polymorfizmov v sekvenovaných dátach.
+polymorfizmov (SNP) v sekvenovaných dátach. Uvažujeme pritom najjednoduchší
+možný scenár, keď sekvenovaná vzorka neobsahuje žiadne iné varianty a jednotlivé
+SNP nie sú príliš blízko seba. Predpokladáme teda, že ak sa sekvenovaná vzorka 
+líši od referencie v nejakej báze, v okolitých bázach sa tieto dve sekvencie
+zhodujú.
+
+\section{Pravdepodobnostný model}
+
+Náš postup pri identifikácii SNP je založený na jednoduchom pravdepodobnostnom modeli.
+Tento model odhaduje podmienené pravdepodobnosti typu 
+,,Aká je pravdepodobnosť, že by postupnosť báz $D$ pri sekvenovaní vygenerovala signál $S$?''
+
+Model predpokladá, že bázy sekvenovaného vlákna DNA postupne prechádzajú nanopórom, pričom
+každá báza sa v nanopóre nachádza počas minimálne $M$ po sebe idúcich meraní signálu. Ku každej
+nameranej hodnote signálu teda môžeme priradiť bázu, ktoré sa v danom čase nachádzala v nanopóre.
+Tomuto priradeniu budeme hovoriť \emph{zarovnanie}.
+
+\begin{definicia}
+
+Nech $n, m, M \in \mathbb{Z}^+$, pričom $m \geq n M$. \emph{Zarovnaním $n$ hodnôt ku $m$ s minimálnou dĺžkou udalosti $M$} nazývame ľubovoľné zobrazenie $f: \{0, 1, \dots, m-1\} \rightarrow \{0, 1, \dots, n-1\}$
+také, že:
+
+\begin{itemize}
+\item $f$ je neklesajúce, teda $\forall x, y \in \{0, 1, \dots, m-1\}: x < y \Rightarrow f(x) \leq f(y)$.
+\item $\forall i \in \{0, 1, \dots, n-1\}: \abs*{\{x ~|~ f(x) = i\}} \geq M$.
+\end{itemize}
+
+Množinu všetkých zarovnaní $n$ hodnôt ku $m$ s minimálnou dĺžkou udalosti $M$ budeme označovať ako
+$A(n, m, M)$. Táto množina je zrejme konečná.
+
+\end{definicia}
+
+Náš model ďalej predpokladá, že nameraný signál závisí iba od bázy, ktorá je práve v nanopóre, $c_1$
+báz pred ňou a $c_2$ báz za ňou. To sa nedá aplikovať na prvých $c_1$ a posledných $c_2$ báz 
+sekvenovanej postupnosti. Pri modelovaní preto budeme pre jednoduchosť predpokladať, že DNA postupnosť, 
+ktorej signál modelujeme, išla cez nanopór ako súčasť nejakej dlhšej sekvencie. Na modelovanie
+signálu, ktorý bol pri tejto postupnosti zaznamenaný, budeme teda potrebovať poznať aj 
+kontext $c_1$ báz pred začiatkom postupnosti a $c_2$ báz za jej koncom.
+
+\begin{definicia}
+
+\emph{DNA sekvenciou dĺžky $n$ s kontextom $c_1$ a $c_2$} nazývame ľubovoľné zobrazenie 
+$D: \{-c_1, -c_1+1, \dots, n+c_2 - 1\} \rightarrow \bazy$. Funkčnú hodnotu $D$ v danom bode $i$
+budeme namiesto $D(i)$ značiť ako $D_i$.
+
+\end{definicia}
+
+Nech $k = c_1 + 1 + c_2$. Budeme hovoriť, že nejaký \kmer{} sa nachádza v nanopóre, ak báza, 
+ktorá je v nanopóre, spolu s okolím $c_1$ báz pred ňou a $c_2$ báz za ňou tvorí tento \kmer{}.
+
+Závislosť signálu od báz, ktoré sú v nanopóre a okolí je popísaná pomocou rozdelenia pravdepodobnosti.
+Pre každý z $4^k$ možných \kmer{ov}  máme v našom modeli rozdelenie 
+pravdepodobnosti pre hodnotu signálu, ktorý vznikne, ak sa tento \kmer{} nachádza v nanopóre.
+Keďže pracujeme s digitalizovanou hodnotou signálu, existuje iba konečné množstvo hodnôt, ktoré
+môže signál nadobudnúť. Rozdelenie pravdepodobnosti teda bude pravdepodobnostná funkcia.
+
+\begin{definicia}
+
+Množinu všetkých možných nameraných hodnôt signálu budeme označovať $\mathbb{S}$.
+
+\end{definicia}
+
+Čísla $M$, $c_1$, $c_2$ a pravdepodobnostné funkcie pre jednotlivé \kmer{y} sú jediné
+parametre nášho modelu.
+
+\begin{definicia}
+
+TODO je štvorica $(M, c_1, c_2, \Delta)$, kde:
+
+\begin{itemize}
+\item $M \in \mathbb{Z}^+$.
+\item $c_1, c_2 \in \mathbb{Z}_{\geq 0}$.
+\item $\Delta$ je množina, ktorá pre každé $K \in \bazy^{c_1 + 1 + c_2}$ obsahuje funkciu
+$\delta_K: \mathbb{S} \rightarrow \mathbb{R}$ takú, že $\sum\limits_{s \in \mathbb{S}} \delta_K(s) = 1$.
+\end{itemize}
+\end{definicia}
+
+Pri odhadovaní pravdepodobnosti signálu budeme jednotlivé merania považovať za nezávislé udalosti.
+Tento predpoklad je značne nerealistický, bol zvolený najmä pre svoju jednoduchosť.
+
+\begin{definicia}
+
+Nech $(M, c_1, c_2, \Delta)$ je TODO, $n, m \in \mathbb{Z}^+$, $D$ je DNA sekvencia dĺžky $n$ s konextom
+$c_1$ a $c_2$, nech $S = (S_i)_{i=0}^{m-1}$ je postupnosť hodnôt z $\mathbb{S}$ a nech 
+$a \in A(n, m, M)$. Pravdepodobnosť vygenerovania signálu $S$ pri prechode sekvencie $D$ nanopórom
+pri zarovnaní $a$ podľa modelu $(M, c_1, c_2, \Delta)$ bude:
+
+$$P(S ~|~ D, a) = \prod\limits_{i=0}^{m-1} \delta_{(D_{i-c_1}, \dots, D_{i+c_2-1})}(S_i) \text{.}$$
+
+\end{definicia}
+
+Na odhadnutie pravdepodobnosti vygenerovania signálu $S$ postupnosťou $D$ musíme uvažovať všetky možné
+zarovnania z $A(n, m, M)$. Pre jednoduchosť budeme predpokladať, že všetky zarovnania z $A(n, m, M)$ sú rovnako pravdepodobné.
+
+\begin{definicia}
+
+Nech $(M, c_1, c_2, \Delta)$ je TODO, $n, m \in \mathbb{Z}^+$, $D$ je DNA sekvencia dĺžky $n$ s kontextom $c_1$ a $c_2$ a nech $S = (S_i)_{i=0}^{m-1}$ je postupnosť hodnôt z $\mathbb{S}$.
+Pravdepodobnosť vygenerovania signálu $S$ pri sekvenovaní $D$ podľa modelu $(M, c_1, c_2, \Delta)$ je:
+
+$$P(S ~|~ D) =  \frac{\sum\limits_{a \in A(n, m, M)} P(S ~|~ D, a)}{\abs*{A(n, m, M)}} \text{.}$$
+\end{definicia}
+
+
+
+\section{Niečo iné}
