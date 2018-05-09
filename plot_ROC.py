@@ -4,10 +4,12 @@ import matplotlib.pyplot as plt
 import argparse
 from alphabet import *
 import copy
+import os
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-o", "--output", help="output file for plot", default="plot.png")
 parser.add_argument("-s", "--scale", help="portion of plot to be shown", default="0.2")
+parser.add_argument("-d", "--directory", help="input file is a directory", action="store_true")
 parser.add_argument("input", help="input file(s)", nargs="+")
 args = parser.parse_args()
 
@@ -53,7 +55,16 @@ def plot_rocs(scores, labels):
 
 plt.suptitle("ROC")
 
-for filename in args.input:
+filenames = []
+
+if args.directory:
+  for dir in args.input:
+    filenames += [os.path.join(dir, file) for file in os.listdir(dir) if
+                not os.path.isdir(os.path.join(dir, file))]
+else:
+  filenames = args.input
+
+for filename in filenames:
   scores = []
   labels = []
   with open(filename, "r") as f:
