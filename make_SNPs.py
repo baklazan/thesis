@@ -1,113 +1,51 @@
 import h5py
 import numpy as np
 import sys
+import os
 import random
 import argparse
+from alphabet import *
+from genome import *
 
 parser = argparse.ArgumentParser()
-parser.add_argument("-c", "--changed", help="print list of changed positions into file")
-parser.add_argument("-u", "--unchanged", help="also print some unchanged positions into the same file")
-parser.add_argument("-n", "--number", help="number of changes to make")
-parser.add_argument("-p", "--percentage", help="percentage of changes to make (doesn't work if --number is used)")
-parser.add_argument("reference", help="reference fasta file")
-parser.add_argument("output", help="output fasta file")
-parser.add_argument("-r", "--reads", help="only change bases in range of these reads", nargs="+")
+parser.add_argument('reads_basedir', help='parent of directories containing reads')
+parser.add_argument('reference', help='reference fasta file')
+parser.add_argument('percentage', help='percentage of changes to make')
 args = parser.parse_args()
 
 
-alphabet = ['A', 'C', 'G', 'T']
 def something_else(base):
   res = alphabet[random.randrange(len(alphabet))]
   while res == base:
     res = alphabet[random.randrange(len(alphabet))]
   return res
 
-reference = ""
-reference_head = []
-reference_tail = []
-reference_lines = []
-with open(args.reference, "r") as f:
-  lines = []
-  first_started = False
-  in_tail = False
-  for l in f:
-    if l[0] == '>':
-      if first_started:
-        in_tail = True
-        reference_tail.append(l)
-      else:
-        first_started = True
-        reference_head.append(l)
-    else:
-      if in_tail:
-        reference_tail.append(l)
-      else:
-        lines.append(l.rstrip())
-  reference = "".join(lines)
-
-valid_positoins = []
-if args.reads:
-  valid_ranges = []
-  for filename in args.reads:
-    with h5py.File(filename) as f:
+reference = load_fasta(args.reference)[0].bases
+read_dirs = [os.path.join(args.reads_basedir, dir) for dir in os.listdir(args.reads_basedir)
+             if os.path.isdir(os.path.join(args.reads_basedir, dir))]
+for dir in read_dirs:
+  read_file = os.path.join(dir, 'read.fast5')
+  start, end = None, None
+  try:
+    with h5py.File(read_file) as f:
       alignment_meta = f['Analyses/RawGenomeCorrected_000/BaseCalled_template/Alignment'].attrs
-      valid_ranges.append((alignment_meta['mapped_start'], alignment_meta['mapped_end']))
-  dstate = np.zeros(len(reference)+1)
-  for r in valid_ranges:
-    dstate[r[0]] += 1
-    dstate[r[1]] -= 1
-  sum = 0
-  for i, d in enumerate(dstate):
-    sum += d
-    if sum > 0:
-      valid_positoins.append(i)
-else:
-  valid_positoins = list(range(len(reference)))
-
-ref_array = list(reference)
-
-not_to_be_changed = [False for x in ref_array]
-
-window_size = 21
-changes = []
-if args.number:
-  for i in range(int(args.number)):
-    index = valid_positoins[random.randrange(len(valid_positoins))]
-    while not_to_be_changed[index]:
-      index = valid_positoins[random.randrange(len(valid_positoins))]
-    changes.append((index, ref_array[index]))
-    ref_array[index] = something_else(ref_array[index])
-    for j in range(index - window_size // 2, index + window_size//2+1):
-      not_to_be_changed[j] = True
-elif args.percentage:
-  for index in valid_positoins:
-    if random.randrange(100) < int(args.percentage):
-      changes.append((index, ref_array[index]))
-      ref_array[index] = something_else(ref_array[index])
-      for j in range(index - window_size // 2, index + window_size//2+1):
-        not_to_be_changed[j] = True
-else:
-  print("Neither --number nor --percentage were specified")
-  sys.exit(1)
-
-with open(args.output, "w") as f:
-  for l in reference_head:
-    f.write(l)
-  for i in range(0, len(ref_array), 70):
-    f.write("{}\n".format("".join(ref_array[i:i+70])))
-  for l in reference_tail:
-    f.write(l)
-
-
-if args.changed:
-  with open(args.changed, "w") as f:
-    for c in changes:
-      f.write("{} {}\n".format(c[0], c[1]))
-    if args.unchanged:
-      used = {}
-      for c in range(int(args.unchanged)):
-        index = valid_positoins[random.randrange(len(valid_positoins))]
-        while not_to_be_changed[index]:
-          index = valid_positoins[random.randrange(len(valid_positoins))]
-        f.write("{} {}\n".format(index, ref_array[index]))
-        not_to_be_changed[index] = True
+      start, end = alignment_meta['mapped_start'], alignment_meta['mapped_end']
+  except KeyError:
+    print('failed to process read {}'.format(dir))
+    continue
+  start = max(0, start - 50)
+  end = min(len(reference), end + 50)
+  relevant_reference = reference[start:end]
+  changes = []
+  for i, c in enumerate(relevant_reference):
+    if random.random()*100 < float(args.percentage):
+      relevant_reference[i] = something_else(c)
+      changes.append((i, relevant_reference[i]))
+  with open(os.path.join(dir, 'reference.fasta'), 'w') as f:
+    f.write('>Interval [{}, {}) from original reference\n'.format(start, end))
+    for line_start in range(0, len(relevant_reference), 80):
+      line_end = min(line_start+80, len(relevant_reference))
+      f.write('{}\n'.format(''.join(relevant_reference[line_start:line_end])))
+  with open(os.path.join(dir, 'changes.txt'), 'w') as f:
+    for pos, val in changes:
+      f.write('{}\t{}\n'.format(pos, val))
