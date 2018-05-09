@@ -24,6 +24,8 @@ parser.add_argument("-k", "--kmer_model", help="file with kmer model to use", de
 parser.add_argument("-g", "--group_name", help="name of group in fast5 files containing basecall info", default="Analyses/Basecall_1D_000")
 parser.add_argument("-b", "--basecall_only", help="only use basecalled sequence to determine SNPs (ignore signal)", action='store_true')
 parser.add_argument("-c", "--configuration", help="config file with reresquiggle parameters", default="default.yaml")
+parser.add_argument("-f", "--full_interval", help="compute scores for whole reference instead of just interesting bases", action="store_true")
+parser.add_argument("-a", "--around_changes", help="compute scores for all bases between first and last changed base", action="store_true")
 parser.add_argument("reference", help="reference fasta file")
 parser.add_argument("interesting", help="list of interesting positions in reference")
 parser.add_argument("read_basedir", help="base directory of resquiggled fast5 files")
@@ -59,7 +61,30 @@ else:
   load_read = lambda read_file, kmer_model, group_name : resquiggled_read(filename=read_file, kmer_model = kmer_model)
 
 reference = load_fasta(args.reference)[0].bases
+
 interesting = load_interesting_bases(args.interesting, reference)
+if args.full_interval and args.around_changes:
+  print("Can't use both --aroung_changes and --full_interval")
+  exit(1)
+if args.full_interval:
+  new_interesting = [None for b in reference]
+  for b in interesting:
+    new_interesting[b.id] = b
+  interesting = new_interesting
+  for i in range(len(reference)):
+    if interesting[i] == None:
+      interesting[i] = interesting_base(i, reference)
+elif args.around_changes:
+  changed = list(filter(lambda b: b.real_value != b.reference_value, interesting))
+  begin = max(0, min(changed).id - 20)
+  end = min(len(reference), max(changed).id + 1 + 20)
+  interesting = [None for i in range(begin, end)]
+  for b in changed:
+    interesting[b.id - begin] = b
+  for i in range(begin, end):
+    if interesting[i - begin] == None:
+      interesting[i - begin] = interesting_base(i, reference)
+
 
 read_files = [os.path.join(args.read_basedir, file) for file in os.listdir(args.read_basedir) if not os.path.isdir(os.path.join(args.read_basedir, file))]
 read_files = filter(lambda x : x[-6:] == ".fast5", read_files)
@@ -103,6 +128,44 @@ if not args.independent:
     if base.real_value != base.reference_value:
       base.print()
   print()
+
+  if args.full_interval or args.around_changes:
+    x, prob, conf, maxconf = [], [], [], []
+    for b in interesting:
+      probs = b.get_normalized_probability()
+      prob.append(1 - probs[inv_alphabet[b.reference_value]])
+      conf.append(b.log_probability[inv_alphabet[b.reference_value]])
+      maxconf.append(max(b.log_probability))
+      x.append(b.id)
+
+
+    fig, ax = plt.subplots()
+    plt.subplots_adjust(bottom=0.25)
+
+    plt.plot(x, prob)
+    #pl2 = plt.twinx()
+    #pl2.plot(x, conf)
+    #pl2.plot(x, maxconf, color = 'red')
+    for b in interesting:
+      if b.real_value != b.reference_value:
+        plt.axvspan(b.id-0.5, b.id+0.5, color='green', alpha=0.5)
+
+    from matplotlib.widgets import Slider
+
+
+    axcolor = 'lightgoldenrodyellow'
+    axpos = plt.axes([0.2, 0.1, 0.65, 0.03], facecolor=axcolor)
+
+    spos = Slider(axpos, 'Pos', x[0], x[-1] - 100 + 1)
+
+
+    def update(val):
+      pos = val
+      ax.axis([pos, pos + 100, 0, 1])
+      fig.canvas.draw_idle()
+
+    spos.on_changed(update)
+    plt.show()
 
   if args.print_worst:
     by_SNP_prob = []
