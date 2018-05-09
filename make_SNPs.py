@@ -81,7 +81,7 @@ if args.number:
       not_to_be_changed[j] = True
 elif args.percentage:
   for index in valid_positoins:
-    if random.randrange(100) < args.percentage:
+    if random.randrange(100) < int(args.percentage):
       changes.append((index, ref_array[index]))
       ref_array[index] = something_else(ref_array[index])
       for j in range(index - window_size // 2, index + window_size//2+1):
