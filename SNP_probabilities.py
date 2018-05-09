@@ -16,6 +16,7 @@ import os
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-o", "--output", help="output file for a posteriori probabilities")
+parser.add_argument("-l", "--log_output", help="file for detailed output (including conditional probabilities and base indices)")
 parser.add_argument("-p", "--print_worst", help="print worst n candidates")
 parser.add_argument("-s", "--show_worst", help="number of worst positions to show (only works with --print_best)")
 parser.add_argument("-i", "--independent", help="treat each read independently", action='store_true')
@@ -65,6 +66,8 @@ read_files = filter(lambda x : x[-6:] == ".fast5", read_files)
 
 if args.output:
   open(args.output, "w").close()
+if args.log_output:
+  open(args.log_output, "w").close()
 
 reads = []
 for read_file in read_files:
@@ -79,7 +82,7 @@ for read_file in read_files:
       read.tweak_normalization(reverse_complement(reference), kmer_model)
     else:
       read.tweak_normalization(reference, kmer_model)
-  print("[{}, {})".format(read.start_in_reference, read.end_in_reference))
+  print("[{}, {}){}".format(read.start_in_reference, read.end_in_reference, read.strand))
 
   model.update_probabilities(reference, read, interesting)
   reads.append(read)
@@ -88,6 +91,10 @@ for read_file in read_files:
       with open(args.output, "a") as f:
         for base in interesting:
           base.output(f)
+    if args.log_output:
+      with open(args.log_output, "a") as f:
+        for base in interesting:
+          base.log_output(f)
     for base in interesting:
       base.clear_probabilities()
 
@@ -114,3 +121,7 @@ if not args.independent:
     with open(args.output, "w") as f:
       for base in interesting:
         base.output(f)
+  if args.log_output:
+    with open(args.log_output, "w") as f:
+      for base in interesting:
+        base.log_output(f)

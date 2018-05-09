@@ -46,6 +46,15 @@ class interesting_base:
     if not empty:
       f.write("{} {} {}\n".format(self.real_value, self.reference_value, "\t".join(map(str, self.get_normalized_probability()))))
 
+  def log_output(self, f):
+    empty = True
+    for p in self.log_probability:
+      empty = empty and p == 0
+    if not empty:
+      f.write("{} {} {}".format(self.id, self.real_value, self.reference_value))
+      f.write(" {}".format('\t'.join(map(str, self.get_normalized_probability()))))
+      f.write(" {}\n".format('\t'.join(map(str, self.log_probability))))
+
   def __lt__(self, other):
     return self.id < other.id
 
