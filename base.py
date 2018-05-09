@@ -44,7 +44,7 @@ class interesting_base:
       if p != 0:
         empty = False
     if not empty:
-      f.write("{} {} {}\n".format(self.real_value, self.reference_value, "\t".join(map(str, self.get_normalized_probability()))))
+      f.write("{} {}\n".format(self.id, "\t".join(map(str, self.get_normalized_probability()))))
 
   def log_output(self, f):
     empty = True

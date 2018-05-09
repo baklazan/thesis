@@ -32,17 +32,9 @@ class model:
   def update_probabilities(self, reference, read, interesting_bases):
     self.wrap_update(reference, read, interesting_bases, self.update_probabilities_internal)
 
-  def update_probabilities_full(self, reference, read, interesting_bases):
-    self.wrap_update(reference, read, interesting_bases, self.update_probabilities_full_internal)
-
   def update_probabilities_internal(self, reference, read, interesting_bases):
     pass
 
-  def update_probabilities_full_internal(self, reference, read, interesting_bases):
-    pass
-
-  def show_base(self, reference, read, base):
-    pass
 
 class window_model(model):
   def __init__(self, kmer_model = None, config = None):
@@ -187,7 +179,11 @@ class window_model(model):
   def update_probabilities_internal(self, reference, read, interesting_bases):
     self.update_probabilities_c(reference, read, interesting_bases)
 
-  def update_probabilities_full_internal(self, reference, read, interesting_bases):
+
+
+
+class moving_window_model(window_model):
+  def update_probabilities_internal(self, reference, read, interesting_bases):
     c_kmer_model = self.kmer_model.get_c_object()
     c_read = read.get_c_object()
 

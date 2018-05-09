@@ -1,16 +1,7 @@
+model: "windowed"
 buffer_size: 8
 min_event_length: 2
 window_size: 23
 penalty: 0.5
 flashbacks: True
 tweak_normalization: True
-
-SNP_insert: 0.030900243309002432
-SNP_delete: 0.09318734793187348
-SNP_false_good: 0.05425790754257907
-SNP_true_substitute: 0.7813463098134631
-SNP_false_substitute: 0.040308191403081915
-non_SNP_insert: 0.03527980535279805
-non_SNP_delete: 0.03738848337388483
-non_SNP_good: 0.8819140308191403
-non_SNP_substitute: 0.047769667477696676
