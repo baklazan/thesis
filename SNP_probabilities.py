@@ -111,7 +111,7 @@ for read_file in read_files:
       read.tweak_normalization(reference, kmer_model)
   print("[{}, {}){}".format(read.start_in_reference, read.end_in_reference, read.strand))
 
-  model.update_probabilities(reference, read, interesting)
+  model.update_probabilities_full(reference, read, interesting)
   reads.append(read)
   if args.independent:
     if args.output:

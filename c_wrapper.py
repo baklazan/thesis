@@ -41,3 +41,13 @@ compute_probabilities.argtypes = [ndpointer(ctypes.c_int, flags='C_CONTIGUOUS'),
                                   ctypes.c_int,
                                   ctypes.c_double,
                                   ctypes.c_bool]
+
+compute_all_probabilities = c_lib.compute_all_probabilities
+compute_all_probabilities.restype = None
+compute_all_probabilities.argtypes = [ndpointer(ctypes.c_int, flags='C_CONTIGUOUS'),
+                                      ctypes.c_int,
+                                      ctypes.c_void_p,
+                                      ctypes.c_void_p,
+                                      ctypes.c_int,
+                                      ndpointer(ctypes.c_double, flags='C_CONTIGUOUS'),
+                                      ctypes.c_bool]

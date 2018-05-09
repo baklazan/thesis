@@ -17,19 +17,28 @@ def log_average(a, b):
 
 
 class model:
-  def update_probabilities(self, reference, read, interesting_bases):
+  def wrap_update(self, reference, read, interesting_bases, func):
     if read.strand == '-':
       reference = reverse_complement(reference)
       original_interesting_bases = interesting_bases
       interesting_bases = [reverse_complement_base(base, reference) for base in interesting_bases]
 
-    self.update_probabilities_internal(reference, read, interesting_bases)
+    func(reference, read, interesting_bases)
 
     if read.strand == '-':
       for i, base in enumerate(original_interesting_bases):
         base.sync_with_reverse_complement(interesting_bases[i])
 
+  def update_probabilities(self, reference, read, interesting_bases):
+    self.wrap_update(reference, read, interesting_bases, self.update_probabilities_internal)
+
+  def update_probabilities_full(self, reference, read, interesting_bases):
+    self.wrap_update(reference, read, interesting_bases, self.update_probabilities_full_internal)
+
   def update_probabilities_internal(self, reference, read, interesting_bases):
+    pass
+
+  def update_probabilities_full_internal(self, reference, read, interesting_bases):
     pass
 
   def show_base(self, reference, read, base):
@@ -170,13 +179,35 @@ class window_model(model):
                                     self.flashbacks)
     for i, b in enumerate(interesting_bases):
       for j in range(len(alphabet)):
-        b.log_probability[j] += result[i*4 + j] / 5
+        b.log_probability[j] += result[i*4 + j] / 15
 
     read.free_c_object(c_read)
     self.kmer_model.free_c_object(c_kmer_model)
 
   def update_probabilities_internal(self, reference, read, interesting_bases):
     self.update_probabilities_c(reference, read, interesting_bases)
+
+  def update_probabilities_full_internal(self, reference, read, interesting_bases):
+    c_kmer_model = self.kmer_model.get_c_object()
+    c_read = read.get_c_object()
+
+    numeric_reference = np.array([inv_alphabet[i] for i in reference], dtype=np.int32)
+    result = np.zeros(4 * read.number_of_events, dtype=np.double)
+    c_wrapper.compute_all_probabilities(numeric_reference,
+                                    len(numeric_reference),
+                                    c_kmer_model,
+                                    c_read,
+                                    5,
+                                    result,
+                                    self.flashbacks)
+    for i, b in enumerate(interesting_bases):
+      id = b.id - read.start_in_reference
+      if id >= 0 and id < read.number_of_events:
+        for j in range(len(alphabet)):
+          b.log_probability[j] += result[id * 4 + j] / 15
+
+    read.free_c_object(c_read)
+    self.kmer_model.free_c_object(c_kmer_model)
 
 class no_model(model):
   def __init__(self):
