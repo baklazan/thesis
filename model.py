@@ -230,22 +230,39 @@ def parse_cigar(cigar):
       num = 0
   return result
 
+def aligned_length(cigar):
+  return sum(num for num, c in cigar if c == 'M' or c == 'D')
+
+def side_to_side(seq1, seq2, cigar):
+  line1 = []
+  line2 = []
+  ind1 = 0
+  ind2 = 0
+  for num, c in cigar:
+    if c == 'S':
+      ind2 += num
+    elif c == 'M':
+      line1 += seq1[ind1:ind1+num]
+      line2 += seq2[ind2:ind2+num]
+      ind1 += num
+      ind2 += num
+    elif c == 'D':
+      line1 += seq1[ind1:ind1 + num]
+      line2 += ['-' for i in range(num)]
+      ind1 += num
+    elif c == 'I':
+      line1 += ['-' for i in range(num)]
+      line2 += seq2[ind2:ind2+num]
+      ind2 += num
+  print(''.join(line1[:100]))
+  print(''.join(line2[:100]))
 
 class basecall_model(model):
 
-  def create_reverse_complement(self, infilename, outfilename):
-    genomes = load_fasta(infilename)
-    with open(outfilename, 'w') as f:
-      for g in genomes:
-        f.write('{}\n'.format(g.description))
-        rcbases = reverse_complement(g.bases)
-        for i in range(0, len(rcbases), 80):
-          f.write('{}\n'.format(''.join(rcbases[i:i+80])))
+
 
   def __init__(self, reference_path, config, log_filename = None):
     self.aligner = BwaAligner(reference_path)
-    self.create_reverse_complement(reference_path, '.rc.fasta')
-    self.rc_aligner = BwaAligner('.rc.fasta')
     self.log_SNP_insert = np.log(config['SNP_insert'])
     self.log_non_SNP_insert = np.log(config['non_SNP_insert'])
     self.log_SNP_delete = np.log(config['SNP_delete'])
@@ -260,17 +277,21 @@ class basecall_model(model):
       self.log_file = open(log_filename, 'w')
 
   def update_probabilities_internal(self, reference, read, interesting_bases):
-    aligner = self.aligner if read.strand == '+' else self.rc_aligner
-    alignments = aligner.align_seq("".join(read.basecall))
+    alignments = self.aligner.align_seq("".join(read.basecall))
     if len(alignments) == 0:
       return
     alignment = alignments[0]
-
     cigar = parse_cigar(alignment.cigar)
+    aligned_reference_length = aligned_length(cigar)
     reference_aligned = []
     corresponding_read_index = [None for i in reference]
     read_aligned = []
-    reference_index = alignment.pos
+    reference_index = alignment.pos if read.strand == '+' else len(reference) - alignment.pos - aligned_reference_length
+    if read.strand == '-':
+      if alignment.orient != '-':
+        print("read and aligner don't agree on its orientation")
+        return
+      cigar = list(reversed(cigar))
     read_index = 0
 
     UNALIGNED, GOOD, SUBSTITUTION, DELETION, NEAR_INSERTION = 'U', 'G', 'S', 'D', 'I'
