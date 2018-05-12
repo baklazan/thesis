@@ -53,7 +53,11 @@ else:
   print('Unknown model: {}'.format(config['model']))
   sys.exit(1)
 
-reference = load_fasta(args.reference)[0].bases
+try:
+  reference = load_fasta(args.reference)[0].bases
+except FileNotFoundError:
+  print("failed to process: reference {} doesn't exist".format(args.reference))
+  exit(1)
 interesting = [interesting_base(i, reference) for i, _ in enumerate(reference)]
 
 
