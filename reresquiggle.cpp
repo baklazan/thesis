@@ -3,10 +3,70 @@ using namespace std;
 
 const double pi = 3.14159265358979323846;
 
-double log_average(double a, double b)
+struct Probability
 {
-  if(a < b) swap(a, b);
-  return a + log(1 + exp(b - a)) - log(2);
+  double log_val;
+  
+  Probability()
+  {
+    log_val = -numeric_limits<double>::infinity();
+  }
+  
+  
+  Probability(double logp)
+  {
+    log_val = logp;
+  }
+  
+  static Probability fromP(double p)
+  {
+    return Probability(log(p));
+  }
+  
+  double get()
+  {
+    return exp(log_val);
+  }
+  
+  Probability& operator*=(const Probability& other)
+  {
+    log_val += other.log_val;
+    return *this;
+  }
+  
+  bool is_nan()
+  {
+    return log_val != log_val;
+  }
+};
+
+Probability operator*(Probability a, Probability b)
+{
+  if(Probability(a.log_val + b.log_val).is_nan()) printf("%lf * %lf = nan\n", a.log_val, b.log_val);
+  return Probability(a.log_val + b.log_val);
+}
+
+Probability operator+(Probability a, Probability b)
+{
+  if(a.log_val < b.log_val) swap(a, b);
+  if(b.log_val == -numeric_limits<double>::infinity()) return a;
+  return Probability(a.log_val + log(1 + exp(b.log_val - a.log_val)));
+}
+
+Probability operator/(Probability a, Probability b)
+{
+  return Probability(a.log_val - b.log_val);
+}
+
+bool operator<(Probability a, Probability b)
+{
+  return a.log_val < b.log_val;
+}
+
+Probability join(Probability a, Probability b)
+{
+  if((a + b).is_nan()) printf("%lf + %lf = nan\n", a.log_val, b.log_val);
+  return a + b;
 }
 
 class KmerModel
@@ -47,15 +107,15 @@ public:
     return kmer_id(&ref[-central_pos]);
   }
   
-  double log_chance_of_signal(double v, int kmer)
+  Probability chance_of_signal(double v, int kmer)
   {
     double diff = v - mean[kmer];
-    return add_const[kmer] - diff * diff * mult_const[kmer];
+    return Probability(add_const[kmer] - diff * diff * mult_const[kmer]);
   }
   
-  double log_chance_mixture(double v, int kmer1, int kmer2)
+  Probability chance_mixture(double v, int kmer1, int kmer2)
   {
-    return log_average(log_chance_of_signal(v, kmer1), log_chance_of_signal(v, kmer2));
+    return (chance_of_signal(v, kmer1) + chance_of_signal(v, kmer2)) / Probability::fromP(2);
   }
 };
 
@@ -84,69 +144,68 @@ struct ResquiggledRead
 };
 
 
-double reresquiggle_flashback(double *signal, int signal_length, vector<int> kmer_ids, int start_buffer, int end_buffer, KmerModel *kmer_model, int min_event_length, double penalty)
+Probability reresquiggle_flashback(double *signal, int signal_length, vector<int> kmer_ids, int start_buffer, int end_buffer, KmerModel *kmer_model, int min_event_length, double penalty)
 {
-  vector<vector<double> > dp(kmer_ids.size()*2, vector<double>(signal_length+1 ,-numeric_limits<double>::infinity()));
+  vector<vector<Probability> > dp(kmer_ids.size()*2, vector<Probability>(signal_length+1 , Probability::fromP(0)));
   for(int x=0; x<=start_buffer; x++)
   {
-    dp[0][x] = -x * penalty;
+    dp[0][x] = Probability(-x * penalty);
   }
   
   for(int y=0; y<kmer_ids.size(); y++)
   {
     for(int x=min_event_length; x<=signal_length; x++)
     {
-      double start_price = 0;
+      Probability start_price(0);
       for(int i=1; i<=min_event_length; i++)
       {
-        start_price += kmer_model->log_chance_of_signal(signal[x-i], kmer_ids[y]);
+        start_price *= kmer_model->chance_of_signal(signal[x-i], kmer_ids[y]);
       }
-      double continue_price = kmer_model->log_chance_of_signal(signal[x-1], kmer_ids[y]);
-      dp[y*2+1][x] = max(dp[y*2+1][x-1] + continue_price, dp[y*2][x-min_event_length] + start_price);
+      Probability continue_price = kmer_model->chance_of_signal(signal[x-1], kmer_ids[y]);
+      dp[y*2+1][x] = join(dp[y*2+1][x-1] * continue_price, dp[y*2][x-min_event_length] * start_price);
     }
     if(y+1 < kmer_ids.size())
     {
       for(int x=1; x<=signal_length; x++)
       {
-        double continue_price = log_average(kmer_model->log_chance_of_signal(signal[x-1], kmer_ids[y]),
-                                            kmer_model->log_chance_of_signal(signal[x-1], kmer_ids[y+1]));
-        dp[y*2+2][x] = max(dp[y*2+1][x], dp[y*2+2][x-1] + continue_price);
+        Probability continue_price = kmer_model->chance_mixture(signal[x-1], kmer_ids[y], kmer_ids[y+1]);
+        dp[y*2+2][x] = join(dp[y*2+1][x], dp[y*2+2][x-1] * continue_price);
       }
     }
   }
-  double res = -numeric_limits<double>::infinity();
+  Probability res = Probability::fromP(0);
   for(int x=signal_length - end_buffer; x <= signal_length; x++)
   {
-    res = max(res, dp.back()[x] - (signal_length-x)*penalty);
+    res = join(res, dp.back()[x] / Probability((signal_length-x)*penalty));
   }
   return res;
 }
 
-double reresquiggle(double *signal, int signal_length, vector<int> kmer_ids, int start_buffer, int end_buffer, KmerModel *kmer_model, int min_event_length, double penalty)
+Probability reresquiggle(double *signal, int signal_length, vector<int> kmer_ids, int start_buffer, int end_buffer, KmerModel *kmer_model, int min_event_length, double penalty)
 {
-  vector<vector<double> > dp(kmer_ids.size()+1, vector<double>(signal_length+1 ,-numeric_limits<double>::infinity()));
+  vector<vector<Probability> > dp(kmer_ids.size()+1, vector<Probability>(signal_length+1 , Probability::fromP(0)));
   for(int x=0; x<=start_buffer; x++)
   {
-    dp[0][x] = -x * penalty;
+    dp[0][x] = Probability(-x * penalty);
   }
   
   for(int y=0; y<kmer_ids.size(); y++)
   {
     for(int x=min_event_length; x<=signal_length; x++)
     {
-      double start_price = 0;
+      Probability start_price(0);
       for(int i=1; i<=min_event_length; i++)
       {
-        start_price += kmer_model->log_chance_of_signal(signal[x-i], kmer_ids[y]);
+        start_price *= kmer_model->chance_of_signal(signal[x-i], kmer_ids[y]);
       }
-      double continue_price = kmer_model->log_chance_of_signal(signal[x-1], kmer_ids[y]);
-      dp[y+1][x] = max(dp[y+1][x-1] + continue_price, dp[y][x-min_event_length] + start_price);
+      Probability continue_price = kmer_model->chance_of_signal(signal[x-1], kmer_ids[y]);
+      dp[y+1][x] = join(dp[y+1][x-1] * continue_price, dp[y][x-min_event_length] * start_price);
     }
   }
-  double res = -numeric_limits<double>::infinity();
+  Probability res = Probability::fromP(0);
   for(int x=signal_length - end_buffer; x <= signal_length; x++)
   {
-    res = max(res, dp.back()[x] - (signal_length-x)*penalty);
+    res = join(res, dp.back()[x] / Probability((signal_length-x)*penalty));
   }
   return res;
 }
@@ -160,10 +219,13 @@ class full_computation
   int height;
   vector<int> row_start, row_end, kmer;
   bool flashbacks;
+  int M;
+  Probability SNP_prior, nonSNP_prior;
   
   
 public:
-  full_computation(int *_reference, int reference_length, KmerModel *kmer_model, ResquiggledRead *read, int half_bandwidth, double *result, bool flashbacks)
+  full_computation(int *_reference, int reference_length, KmerModel *kmer_model, ResquiggledRead *read, 
+                   int half_bandwidth, double *result, int M, bool flashbacks, double expected_SNPs)
   {
     this->kmer_model = kmer_model;
     this->read = read;
@@ -173,6 +235,7 @@ public:
     this->reference_length = reference_length;
     this->flashbacks = flashbacks;
     height = read->event_start.size();
+    this->M = M;
     
     if(flashbacks)
     {
@@ -182,6 +245,10 @@ public:
     {
       patch_size = kmer_model->k;
     }
+    
+    SNP_prior =  Probability::fromP(expected_SNPs/3);
+    nonSNP_prior =  Probability::fromP(1-expected_SNPs);
+    
     row_start = vector<int>(height+1);
     row_end = vector<int>(height+1);
     row_start[0] = read->event_start[0];
@@ -198,60 +265,109 @@ public:
     }
   }
   
-  void compute_row_backward(int y, double *current_row, double *next_row, int current_kmer, int next_kmer = -1)
+  void compute_flashback_layer_backward(int y, Probability *layer, Probability *row, int previous_kmer, int current_kmer)
   {
+    int st = row_start[y];
+    int x = row_end[y] - 1;
+    layer[x - st] = row[x - st];
+    for(int x = row_end[y] - 2; x >= st; x--)
+    {
+      layer[x - st] = join(row[x - st], layer[x + 1 - st] * kmer_model->chance_mixture(read->signal[x], previous_kmer, current_kmer));
+    }
+  }
+  
+  Probability cost_M_steps(int signal_start_id, int kmer_id)
+  {
+    Probability res(0);
+    for(int i=0; i<M; i++)
+    {
+      res *= kmer_model->chance_of_signal(read->signal[signal_start_id + i], kmer_id);
+    }
+    if(res.is_nan()) printf("product is nan\n");
+    return res;
+  }
+  
+  void compute_row_backward(int y, Probability *current_row, Probability *next_row, int current_kmer, int next_kmer = -1)
+  {
+    vector<Probability> inter_layer;
+    if(next_row != nullptr && flashbacks)
+    {
+      inter_layer.resize(row_end[y+1] - row_start[y+1]);
+      compute_flashback_layer_backward(y+1, &inter_layer[0], next_row, current_kmer, next_kmer);
+      next_row = &inter_layer[0];
+    }
+    
     int st = row_start[y];
     int x = row_end[y] - 1;
     if(next_row == nullptr)
     {
-      current_row[x - st] = 0;
+      current_row[x - st] = Probability(0);
     }
     else
     {
-      if(x + 1 >= row_start[y+1] && x+1 < row_end[y+1])
+      if(x + M >= row_start[y+1] && x+M < row_end[y+1])
       {
-        current_row[x - st] = next_row[x+1 - row_start[y+1]] + kmer_model->log_chance_of_signal(read->signal[x], next_kmer);
+        current_row[x - st] = next_row[x+M - row_start[y+1]] * cost_M_steps(x, next_kmer);
       }
       else
       {
-        current_row[x - st] = -numeric_limits<double>::infinity();
+        current_row[x - st] = Probability::fromP(0);
       }
-    }
-    if(current_row[x - st] > 100)
-    {
-      printf("y: %d [%d %d) x: %d val: %lf\n", y, st, row_end[y], x, current_row[x-st]);
     }
     for(int x = row_end[y] - 2; x >= st; x--)
     {
-      current_row[x - st] = current_row[x+1 - st] + kmer_model->log_chance_of_signal(read->signal[x], current_kmer);
-      if(next_row != nullptr && x+1 >= row_start[y+1] && x+1 < row_end[y+1])
+      current_row[x - st] = current_row[x+1 - st] * kmer_model->chance_of_signal(read->signal[x], current_kmer);
+      if(next_row != nullptr && x+M >= row_start[y+1] && x+M < row_end[y+1])
       {
-        double alternative = next_row[x+1-row_start[y+1]] + kmer_model->log_chance_of_signal(read->signal[x], next_kmer);
-        current_row[x-st] = max(current_row[x-st], alternative);
-      }
-      if(current_row[x - st] > 100)
-      {
-        printf("y: %d [%d %d) x: %d val: %lf\n", y, st, row_end[y], x, current_row[x-st]);
+        Probability alternative = next_row[x+M-row_start[y+1]] * cost_M_steps(x, next_kmer);
+        current_row[x-st] = join(current_row[x-st], alternative);
       }
     }
   }
   
-  void compute_row_forward(int y, double *current_row, double *previous_row, int current_kmer)
+  void compute_flashback_layer_forward(int y, Probability *layer, Probability *row, int current_kmer, int next_kmer)
   {
+    int st = row_start[y];
+    row[0] = layer[0];
+    for(int x=st+1; x<row_end[y]; x++)
+    {
+      row[x - st] = join(layer[x - st], row[x - 1 - st] * kmer_model->chance_mixture(read->signal[x-1], current_kmer, next_kmer));
+    }
+  }
+  
+  void compute_row_forward(int y, Probability *current_row, Probability *previous_row, int current_kmer, int next_kmer = -1)
+  {
+    Probability *row = current_row;
+    vector<Probability> inter_layer;
+    if(flashbacks && next_kmer != -1)
+    {
+      inter_layer.resize(row_end[y] - row_start[y]);
+      row = &inter_layer[0];
+    }
     int st = row_start[y];
     for(int x=st; x<row_end[y]; x++)
     {
-      current_row[x - st] = -numeric_limits<double>::infinity();
-      double score = kmer_model->log_chance_of_signal(read->signal[x-1], current_kmer);
+      row[x - st] = Probability::fromP(0);
       if(x > st)
       {
-        current_row[x - st] = current_row[x - 1 - st] + score;
+        if(kmer_model->chance_of_signal(read->signal[x-1], current_kmer).is_nan()) printf("nans, nans everywhere\n");
+        row[x - st] = row[x - 1 - st] * kmer_model->chance_of_signal(read->signal[x-1], current_kmer);
+        if(row[x - st].is_nan()) printf("producing nan A\n");
       }
-      if(x-1 >= row_start[y-1] && x-1 < row_end[y-1])
+      if(x-M >= row_start[y-1] && x-M < row_end[y-1])
       {
-        current_row[x - st] = max(current_row[x - st], previous_row[x-1 - row_start[y-1]] + score);
+        if(row[x - st].is_nan()) printf("already nan B\n");
+        row[x - st] = join(row[x - st], previous_row[x-M - row_start[y-1]] * cost_M_steps(x-M, current_kmer));
+        if(row[x - st].is_nan()) printf("producing nan B\n");
       }
     }
+    for(int x=st; x<row_end[y]; x++) if(row[x - st].is_nan()) printf("nan at intermediate row %d, column %d before flashback layer\n", x, y);
+    if(flashbacks && next_kmer != -1)
+    {
+      compute_flashback_layer_forward(y, row, current_row, current_kmer, next_kmer);
+    }
+    for(int x=st; x<row_end[y]; x++) if(current_row[x - st].is_nan()) printf("nan at row %d, column %d\n", x, y);
+    for(int x=st; x<row_end[y]; x++) if(row[x - st].is_nan()) printf("nan at intermediate row %d, column %d\n", x, y);
   }
   
   void compute()
@@ -261,46 +377,37 @@ public:
       result[i] = -numeric_limits<double>::infinity();
     }
     
-    vector<vector<double> > cost_to_end(height+1);
+    vector<vector<Probability> > cost_to_end(height+1);
     cost_to_end.back().resize(row_end[height] - row_start[height]);
     compute_row_backward(height, &cost_to_end.back()[0], nullptr, kmer[height-1]);
     for(int y=height-1; y>0; y--)
     {
-      vector<vector<double> > candidates(1, vector<double>(row_end[y] - row_start[y]));
+      vector<vector<Probability> > candidates(1, vector<Probability>(row_end[y] - row_start[y]));
       compute_row_backward(y, &candidates[0][0], &cost_to_end[y+1][0], kmer[y-1], kmer[y]);
       if(y + patch_size <= height)
       {
-        int position = y + kmer_model->k - 1 - kmer_model->central_pos;
+        int position = y + patch_size - 1 - kmer_model->central_pos;
         int original = reference[position];
         for(int i=0; i<4; i++)
         {
           if(i == original) continue;
           reference[position] = i;
-          vector<vector<double> > patch(patch_size);
+          vector<vector<Probability> > patch(patch_size);
           for(int yy = y+patch_size-1; yy >= y; yy--)
           {
             patch[yy-y].resize(row_end[yy] - row_start[yy]);
-            double *next = yy+1-y < patch_size? &patch[yy+1-y][0] : &cost_to_end[yy+1][0];
+            Probability *next = yy+1-y < patch_size? &patch[yy+1-y][0] : &cost_to_end[yy+1][0];
             int current_kmer = kmer_model->kmer_id_from_center(&reference[yy-1]);
             int next_kmer = kmer_model->kmer_id_from_center(&reference[yy]);
             compute_row_backward(yy, &patch[yy-y][0], next, current_kmer, next_kmer);
           }
           candidates.push_back(patch[0]);
-          
-          /*double best = -numeric_limits<double>::infinity();
-          for(int j=0; j<patch[0].size(); j++) best = max(best, patch[0][j] + cost_from_start[y][j]);
-          result[position * 4 + i] = max(result[position * 4 + i], best);*/
-          
         }
         reference[position] = original;
-        
-        /*double best = -numeric_limits<double>::infinity();
-        for(int j=0; j<candidates[0].size(); j++) best = max(best, candidates[0][j] + cost_from_start[y][j]);
-        result[position * 4 + reference[position]] = max(result[position * 4 + reference[position]], best);*/
       }
       
       
-      cost_to_end[y] = vector<double>(row_end[y] - row_start[y], -numeric_limits<double>::infinity());
+      cost_to_end[y] = vector<Probability>(row_end[y] - row_start[y], Probability::fromP(0));
       for(int i=0; i<1; i++) //candidates.size(); i++)
       {
         for(int j=0; j<cost_to_end[y].size(); j++)
@@ -311,52 +418,59 @@ public:
     }
     
 
-    vector<vector<double> > cost_from_start(height+1);
-    cost_from_start[0] = vector<double>(1, 0);
+    vector<vector<Probability> > cost_from_start(height+1);
+    cost_from_start[0] = vector<Probability>(1, 0);
     for(int y=1; y<=height; y++)
     {
-      vector<vector<double> > candidates(1, vector<double>(row_end[y] - row_start[y]));
-      compute_row_forward(y, &candidates[0][0], &cost_from_start[y-1][0], kmer[y-1]);
+      vector<vector<Probability> > candidates(1, vector<Probability>(row_end[y] - row_start[y]));
+      compute_row_forward(y, &candidates[0][0], &cost_from_start[y-1][0], kmer[y-1], y < height? kmer[y] : -1);
       if(y >= patch_size)
       {
-        int position = y - patch_size + kmer_model->k - 1 - kmer_model->central_pos;
+        int position = y - 1 - kmer_model->central_pos;
         int original = reference[position];
         for(int i=0; i<4; i++)
         {
           if(i == original) continue;
           reference[position] = i;
-          double *previous = &cost_from_start[y-patch_size][0];
-          vector<vector<double> > patch;
+          Probability *previous = &cost_from_start[y-patch_size][0];
+          vector<vector<Probability> > patch;
           for(int yy = y-patch_size+1; yy <= y; yy++)
           {
-            patch.push_back(vector<double>(row_end[yy] - row_start[yy]));
+            patch.push_back(vector<Probability>(row_end[yy] - row_start[yy]));
             int current_kmer = kmer_model->kmer_id_from_center(&reference[yy-1]);
-            compute_row_forward(yy, &patch.back()[0], previous, current_kmer);
+            int next_kmer = -1;
+            if(yy < height) next_kmer = kmer_model->kmer_id_from_center(&reference[yy]);
+            compute_row_forward(yy, &patch.back()[0], previous, current_kmer, next_kmer);
             previous = &patch.back()[0];
           }
           candidates.push_back(patch.back());
-          double best = -numeric_limits<double>::infinity();
+          Probability best = Probability::fromP(0);
           for(int x=row_start[y]; x<row_end[y]; x++)
           {
-            best = max(best, patch.back()[x - row_start[y]] + cost_to_end[y][x - row_start[y]]);
+            best = join(best, patch.back()[x - row_start[y]] * cost_to_end[y][x - row_start[y]]);
           }
-          result[position * 4 + i] = max(result[position * 4 + i], best);
-          /*for(int yy=y-patch_size; yy<y; yy++)
+          if(best.is_nan()) printf("a\n");
+          result[position * 4 + i] = (best * SNP_prior).log_val;
+          for(int yy=y-patch_size; yy<y; yy++)
           {
             if(yy == position) continue;
-            result[yy * 4 + reference[yy]] = max(result[yy * 4 + reference[yy]], best);
-          }*/
+            if(best.is_nan()) printf("b\n");
+            result[yy * 4 + reference[yy]] = (Probability(result[yy * 4 + reference[yy]]) + best * SNP_prior).log_val;
+          }
         }
         reference[position] = original;
-        double best = -numeric_limits<double>::infinity();
+        Probability best = Probability::fromP(0);
         for(int x=row_start[y]; x<row_end[y]; x++)
         {
-          best = max(best, candidates[0][x - row_start[y]] + cost_to_end[y][x - row_start[y]]);
+          if(candidates[0][x - row_start[y]].is_nan()) printf("d\n");
+          if(cost_to_end[y][x - row_start[y]].is_nan()) printf("e\n");
+          best = join(best, candidates[0][x - row_start[y]] * cost_to_end[y][x - row_start[y]]);
         }
-        result[position * 4 + reference[position]] = max(result[position * 4 + reference[position]], best);
+        if(best.is_nan()) printf("c\n");
+        result[position * 4 + reference[position]] = (Probability(result[position * 4 + reference[position]]) + best.log_val * nonSNP_prior).log_val;
       }
       
-      cost_from_start[y] = vector<double>(row_end[y] - row_start[y], -numeric_limits<double>::infinity());
+      cost_from_start[y] = vector<Probability>(row_end[y] - row_start[y], Probability::fromP(0));
       for(int i=0; i<1; i++) //candidates.size(); i++)
       {
         for(int j=0; j<cost_from_start[y].size(); j++)
@@ -397,7 +511,7 @@ extern "C"
                              int min_event_length, int window_before, int window_after, int buffer_size, double penalty,
                              bool flashbacks)
   {
-    double (*reresquiggle_func)(double*, int, vector<int>, int, int, KmerModel*, int, double) = flashbacks ? reresquiggle_flashback : reresquiggle;
+    Probability (*reresquiggle_func)(double*, int, vector<int>, int, int, KmerModel*, int, double) = flashbacks ? reresquiggle_flashback : reresquiggle;
     for(int i=0; i<interesting_count; i++)
     {
       int pos = interesting_positions[i];
@@ -432,16 +546,17 @@ extern "C"
                                                    end_buffer, 
                                                    kmer_model, 
                                                    min_event_length,
-                                                   penalty);
+                                                   penalty).log_val;
       }
       reference[pos] = reference_value;
     }
   }
   
   void compute_all_probabilities(int *reference, int reference_length, KmerModel *kmer_model, 
-                                 ResquiggledRead *read, int half_bandwidth, double *result, bool flashbacks)
+                                 ResquiggledRead *read, int half_bandwidth, double *result, 
+                                 int min_event_length, bool flashbacks, double expected_SNPs)
   {
-    full_computation(reference, reference_length, kmer_model, read, half_bandwidth, result, flashbacks).compute();
+    full_computation(reference, reference_length, kmer_model, read, half_bandwidth, result, min_event_length, flashbacks, expected_SNPs).compute();
   }
   
   KmerModel *new_KmerModel(int k, int central_pos, double *mean, double *sigma)

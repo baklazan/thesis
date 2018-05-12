@@ -171,7 +171,7 @@ class window_model(model):
                                     self.flashbacks)
     for i, b in enumerate(interesting_bases):
       for j in range(len(alphabet)):
-        b.log_probability[j] += result[i*4 + j] / 15
+        b.log_probability[j] += result[i*4 + j] / 10
 
     read.free_c_object(c_read)
     self.kmer_model.free_c_object(c_kmer_model)
@@ -182,7 +182,13 @@ class window_model(model):
 
 
 
-class moving_window_model(window_model):
+class moving_window_model(model):
+  def __init__(self, kmer_model = None, config = None):
+    self.flashbacks = config['flashbacks']
+    self.min_event_length = config['min_event_length']
+    self.expected_SNPs = config['expected_SNPs']
+    self.kmer_model = kmer_model
+
   def update_probabilities_internal(self, reference, read, interesting_bases):
     c_kmer_model = self.kmer_model.get_c_object()
     c_read = read.get_c_object()
@@ -195,12 +201,14 @@ class moving_window_model(window_model):
                                     c_read,
                                     5,
                                     result,
-                                    self.flashbacks)
+                                    self.min_event_length,
+                                    self.flashbacks,
+                                    self.expected_SNPs)
     for i, b in enumerate(interesting_bases):
       id = b.id - read.start_in_reference
       if id >= 0 and id < read.number_of_events:
         for j in range(len(alphabet)):
-          b.log_probability[j] += result[id * 4 + j] / 15
+          b.log_probability[j] += result[id * 4 + j] / 10
 
     read.free_c_object(c_read)
     self.kmer_model.free_c_object(c_kmer_model)
@@ -258,8 +266,6 @@ def side_to_side(seq1, seq2, cigar):
   print(''.join(line2[:100]))
 
 class basecall_model(model):
-
-
 
   def __init__(self, reference_path, config, log_filename = None):
     self.aligner = BwaAligner(reference_path)
