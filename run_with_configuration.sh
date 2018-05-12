@@ -14,6 +14,8 @@ set -e
 mkdir $OUTPUT_DIR
 mkdir $OUTPUT_DIR/results
 
+echo -n $DATASET > $OUTPUT_DIR/dataset.txt
+
 set +e
 for dir in $DATASET/reads/*
 do
