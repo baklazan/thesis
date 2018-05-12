@@ -21,6 +21,30 @@ if args.labels and len(args.labels) != len(args.results):
   sys.exit(1)
 
 
+def intersection(lists):
+  result = []
+  for l in lists:
+    l.sort()
+  indices = [0 for l in lists]
+  done = False
+  while not done:
+    mini = None
+    mini_id = None
+    good = True
+    for i, l in enumerate(lists):
+      if indices[i] >= len(l):
+        done = True
+        break
+      if mini != None and l[indices[i]] != mini:
+        good = False
+      if mini == None or l[indices[i]] < mini:
+        mini = l[indices[i]]
+        mini_id = i
+    if good and not done:
+      result.append(mini)
+    indices[mini_id] += 1
+  return result
+
 def plot_rocs(scores, label):
   scores = list(chain.from_iterable(scores))
   scores.sort(reverse=True)
@@ -126,12 +150,16 @@ def decorate_score_dist():
   plt.legend(loc='upper center')
 
 
+outfiles = []
+for experiment in args.results:
+  outfiles.append(list(filter(lambda x: x[-4:] == '.txt', os.listdir(experiment))))
 
+outfiles = intersection(outfiles)
 
 experiments = []
 for eid, experiment in enumerate(args.results):
   all_scores = []
-  for outfile in os.listdir(experiment):
+  for outfile in outfiles:
     if outfile[-4:] != '.txt':
       continue
     reffile = os.path.join(args.dataset, 'reads', outfile[:-4], 'reference.fasta')
