@@ -40,7 +40,9 @@ def intersection(lists):
       if mini == None or l[indices[i]] < mini:
         mini = l[indices[i]]
         mini_id = i
-    if good and not done:
+    if done:
+      break
+    if good:
       result.append(mini)
     indices[mini_id] += 1
   return result
