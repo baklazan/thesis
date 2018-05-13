@@ -43,6 +43,7 @@ class window_model(model):
     self.buffer_size = config['buffer_size']
     self.penalty = config['penalty']
     self.flashbacks = config['flashbacks']
+    self.expected_SNPs = config['expected_SNPs']
     self.kmer_model = kmer_model
 
   def reresquiggle(self, signal, reference_kmer_ids, start_buffer=0, end_buffer=0, plot = None):
@@ -168,10 +169,11 @@ class window_model(model):
                                     self.window_size // 2,
                                     self.buffer_size,
                                     self.penalty,
-                                    self.flashbacks)
+                                    self.flashbacks,
+                                    self.expected_SNPs)
     for i, b in enumerate(interesting_bases):
       for j in range(len(alphabet)):
-        b.log_probability[j] += result[i*4 + j] / 10
+        b.log_probability[j] += result[i*4 + j]
 
     read.free_c_object(c_read)
     self.kmer_model.free_c_object(c_kmer_model)
@@ -208,7 +210,7 @@ class moving_window_model(model):
       id = b.id - read.start_in_reference
       if id >= 0 and id < read.number_of_events:
         for j in range(len(alphabet)):
-          b.log_probability[j] += result[id * 4 + j] / 10
+          b.log_probability[j] += result[id * 4 + j]
 
     read.free_c_object(c_read)
     self.kmer_model.free_c_object(c_kmer_model)
