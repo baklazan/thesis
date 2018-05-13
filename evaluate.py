@@ -90,17 +90,26 @@ def decorate_rocs():
   plt.ylim((0, 1))
   plt.legend(loc='lower right')
 
+def histogram(values, bins):
+  step = 1 / bins
+  hist = np.zeros(bins)
+  edges = [i*step for i in range(bins+1)]
+  for v in values:
+    hist[max(0, min(bins-1, int(v / step)))] += 1
+  return hist, edges
+
 def plot_distribution(values, label):
-  hist, edges = np.histogram(values, bins='auto')
+  hist, edges = histogram(values, bins=max(100, int(np.sqrt(len(values)))))
   hist = hist / len(values)
-  y = [0, 0]
-  x = [0, edges[0]]
   for i, val in enumerate(hist):
     hist[i] = val / (edges[i+1] - edges[i])
+  y = [0, 0, hist[0]]
+  x = [0, edges[0], edges[0]]
+  for i, val in enumerate(hist):
     y.append(hist[i])
-    x.append(edges[i])
-    y.append(hist[i])
-    x.append(edges[i+1])
+    x.append((edges[i+1] + edges[i])/2)
+  y.append(hist[-1])
+  x.append(edges[-1])
   y.append(0)
   x.append(edges[-1])
   y.append(0)
