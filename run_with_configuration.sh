@@ -19,5 +19,5 @@ echo -n $DATASET > $OUTPUT_DIR/dataset.txt
 set +e
 for dir in $DATASET/reads/*
 do
-  python3 detect_SNP.py $dir/reference.fasta $dir -i -o $OUTPUT_DIR/results/$(basename $dir).txt -c $CONFIG
+  python3 detect_SNP.py $dir/reference.fasta $dir -o $OUTPUT_DIR/results/$(basename $dir).txt -c $CONFIG
 done
