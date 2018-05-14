@@ -2,19 +2,151 @@
 
 \label{kap:testovanie}
 
-V tejto kapitole uvedieme metodiku a výsledky testovania nášho prístupu na reálnych dátach.
+Postupy popsísané v kapitole \ref{kap:identifikacia_SNP} sme implementovali v jazyku Python 3 s
+výpočtovo kritickými časťami v C++.
+\todo{Odkázať na implementáciu na githube?}
+V tejto kapitole náš postup testujeme na reálnych dátach.
 
-\todo{Odkázať na implementáciu na githube.}
 
-\section{Dáta}
+\section{Návrh experimentu}
 
-\todo{Popísať odkiaľ máme dáta, akú majú štruktúru, akú chceme štruktúru a ako sme si ich museli
-upraviť.}
+Dáta, ktoré pri experimente používame, sa skladajú z troch zložiek:
 
-\section{Metriky}
+\begin{enumerate}
+\item \label{item:reference} Postupnosť báz $A$.
+\item \label{item:signal} Signál $S$ z MinIONa získaný pri sekvenovaní nejakej sekvencie $B$, 
+ktorá sa od $A$ líši iba v niekoľkých SNP.
+\item \label{item:ground} Postupnosť báz $B$, získaná nejakou presnou sekvenačnou metódou.
+\end{enumerate}
 
-\todo{Popísať, ako budeme merať, či je riešenie dobré.}
+Počas testovania dostane náš model na vstupe iba prvé dve zložky dát, teda signál $S$ a postupnosť $A$ 
+ako referenciu. Model na základe signálu odhadne, kde sa v postupnosti $B$ vyskytujú SNP. Na základe
+skutočnej postupnosti $B$ (zložka \ref{item:ground}) sa potom vyhodnotí, aká presná je predpoveď modelu.
+
+Dáta s vhodnou štruktúrou skonštruujeme tak, že začneme so zložkami \ref{item:signal} a 
+\ref{item:ground} a vytvoríme k nim zložku \ref{item:reference}. Z rôznych iných prác pracujúcich
+s MinIONom existujú dáta, kde je rovnaká DNA sekvencia osekvenovaná dvakrát: raz MinIONom a raz nejakou 
+presnou metódou. Signál zo sekvenovania MinIONom môžeme teda použiť ako $S$ a výsledok presného 
+sekvenovania ako $B$. Postupnosť $A$ potom vytvoríme z postupnosti $B$ tak, že v nej umelo vytvoríme
+niekoľko SNP. Takýto postup nám dáva plnú kontrolu nad množstvom SNP, v ktorých sa $B$ líši od $A$,
+nášmu modelu teda dokážeme dať na vstup dobré apriórne pravdepodobnosti.
+
+Pri každom experimente si určíme podiel SNP $p$, ktorý chceme mať v našich dátach. Pri konštrukcii
+postupnosti $A$ postupujeme tak, že pre každú bázu postupnosti $B$ sa nezávisle rozhodneme, či ju
+zmeníme. S pravdepodobnosťou $1-p$ bázu ponecháme, s pravdepodobnosťou $p$ ju zmeníme na inú, pričom
+každá z troch možných iných báz má rovnakú pravdepodobnosť $\nicefrac{p}{3}$.
+
+
+V každom experimente testujeme náš model s rovnakými parametrami na viacerých čítaniach. Všetky čítania
+sú zo sekvenovania rovnakej postupnosti $B$, postupnosť $A$ však ku každému čítaniu vytvoríme zvlášť.
+Podiel SNP $p$ je pre všetky čítania rovnaký a dávame ho modelu k dispozícii, aby si na základe
+neho vypočítal apriórne pravdepodobnosti.
+
+Pri experimentoch používame podmnožinu dát použitých v \cite{BasecallerComparison} a \todo{odkaz na
+dáta od Francúzov}.
+
+\section{Vyhodnocovanie}
+
+V našom modeli pri každej pozícii počítame aposteriórne pravdepodobnosti pre niekoľko hypotéz. Sčítaním
+pravdepodobností pre všetky tri hypotézy hovoriace, že na danej pozícii je iná báza ako v referencii,
+získame pre danú pozíciu nejaké skóre. Toto skóre vyjadruje, ako veľmi je náš model presvedčený, že na tejto pozícii je SNP. To, ako dobre tieto skóre popisujú realitu, budeme v jednotlivých experimentoch vyhodnocovať pomocou dvoch metrík: ROC krivky a \todo{}.
+
+\subsection{ROC krivka}
+
+Náš model môžeme chápať ako klasifikátor, ktorý sa snaží pozície sekvenovanej postupnosti rozdeliť
+na dve skupiny: tie, na ktorých je SNP a tie, na ktorých nie je SNP.
+Presnosť klasifikátorov s dvoma triedami sa často vyjadruje pomocou \emph{Receiver operating characteristic} (ROC) krivky \todo{citácia}.
+
+Pozície, ktoré prehlásime za SNP, môžeme vyberať pomocou prahu. Zvolíme si nejaký prah $t$ a za
+SNP budeme považovať práve tie pozície, ktoré majú skóre aspoň $t$. Voľba prahu bude ovplyvňovať,
+koľkých a akých chýb sa pri klasifikácii dopustíme.
+Pre každú možnú hodnotu prahu nás budú zaujímať dve čísla: \emph{True positive rate} a \emph{False positive rate}. 
+
+\begin{definicia} 
+\leavevmode
+\begin{description}
+\item[True positive rate] (TPR) je pomer počtu tých SNP, ktoré náš model správne označí ako SNP, k počtu všetkých SNP v sekvenovanej postupnosti.
+\item[False positive rate] (FPR) je pomer počtu
+pozícií, ktoré náš model nesprávne označí ako SNP, k počtu všetkých pozícií, ktoré nie sú SNP.
+\end{description}
+\end{definicia}
+
+Zvolením vhodného prahu vieme dosiahnuť ľubovoľné FPR medzi $0$ a $1$, za znižovanie FPR však musíme
+platiť znižovaním TPR. ROC krivka je graf závislosti TPR od FPR. 
+
+\todo{obrázok: príklad ROC krivky}
+
+Čím presnejší je model, tým bližšie je jeho krivka k ľavému hornému rohu grafu (teda k bodu $
+\mathrm{FPR} = 0, \mathrm{TPR} = 1$).
+ROC krivka modelu, ktorý ignoruje dáta a všetkým pozíciám priradí náhodné skóre, vyzerá ako diagonála
+$\mathrm{TPR} = \mathrm{FPR}$.
+
+Keď počítame ROC krivky pre naše experimenty, vždy uvažujeme rovnaký prah pre všetky čítania v danom 
+experimente. Neuvažujeme teda možnosť, že by sme v rôznych čítaniach v rámci jedného experimentu použili 
+rôzny prah.
+
+\subsection{}
+
+\todo{nazvať a popísať druhú metriku}.
 
 \section{Výsledky}
+
+\subsection[Porovnanie prístupu so štyroma hypotézami a prístupu s $3(2k-1)+1$ hypotézami]{Porovnanie prístupu so štyroma hypotézami a prístupu s $\boldsymbol{3(2k-1)+1}$ hypotézami}
+\label{exp:4vsMany}
+V tejto časti porovnávame verziu nášho modelu popísanú v časti \ref{sec:jedna_pozicia} s
+verziou popísanou v \ref{sec:blizke_pozicie}.
+
+Pri experimente sme použili 1000 čítaní s podielom SNP $1\%$. \todo{napísať, na koľkých čítaniach
+failla niektorá z prvých dvoch fáz (zarovnanie, alebo \resquiggle)?} Obe verzie nášho modelu sme na týchto dátach pustili s parametrom $M$ (minimálny počet hodnôt signálu zarovnaný k jednej báze) rovným $2$.
+Vylepšenia popísané v \ref{sec:vylepsenia} zatiaľ nepoužívame.
+
+\todo{grafy}
+
+Na ROC krivke vidíme, že prístup s $3(2k-1)+1$ hypotézami je lepší pre nízke FPR, 
+kým prístup so štyroma
+hypotézami je lepší pre vysoké TPR. Keďže pri identifikácii nás zaujíma najmä časť ROC krivky s
+veľmi nízkymi FPR, v metrike \todo{} je prístup s $3(2k-1)+1$ hypotézami lepší. V ďalších 
+experimentoch preto používame prístup s $3(2k-1)+1$ hypotézami.
+
+Hlavným dôvodom zavedenia nových hypotéz bola snaha lepšie vyhodnocovať pozície blízko SNP. Preto 
+pre obe verzie modelu uvádzame aj graf distribúcie skóre, ktoré získali pozície so SNP, pozície
+tesne vedľa SNP a pozície ďaleko od SNP.
+
+\todo{grafy distribúcií}
+
+Vidíme, že zavedením viacerých hypotéz sa dramaticky znížilo množstvo pozícií tesne vedľa SNP s
+vysokým skóre.
+
+\subsection{Vplyv dolaďovania normalizácie}
+\label{exp:tweaking}
+V tomto experimente meriamie vplyv dolaďovania normalizácie navrhovaného v \ref{upg:tweaking}. Použili sme 
+rovnaké dáta ako v experimente popisovanom v \ref{exp:4vsMany}. Náš model sme na nich pustili dvakrát: 
+raz s dolaďovaním
+normalizácie a raz bez neho. V oboch prípadoch používame $M=2$, modelovanie cúvania zatiaľ nepoužívame.
+
+\todo{grafy}
+
+Vidíme, že dolaďovanie normalizácie mierne zvýšilo presnosť modelu, v ďalších experimentoch preto
+používame model s dolaďovaním normalizácie.
+
+\subsection{Vplyv modelovania cúvania}
+\label{exp:flashbacks}
+Tento experiment skúma vplyv modelovania cúvania navrhovaného v \ref{upg:flashbacks}. Náš model sme
+opäť pustili na rovnakých dátach ako v experimente \ref{exp:4vsMany}, raz bez modelovania cúvania a raz
+s ním. Opäť v oboch prípadoch používame $M=2$.
+
+\todo{grafy}
+
+Keďže modelovanie cúvania spresňuje náš model, v ďalších experimentoch používame model s modelovanám
+cúvania.
+
+\subsection[Vplyv parametra $M$]{Vplyv parametra $\boldsymbol{M}$}
+V tomto experimente sme náš model pustili postupne pre $M = 1, 2, \dots, 6$. Stále používame rovnaké
+dáta ako v \ref{exp:4vsMany}.
+
+\todo{grafy}
+
+Vidíme, že najväčšiu presnosť náš model dosahuje pri $M = 2$ a $M = 3$, pre $M > 3$ začne presnosť
+výrazne klesať. V ďalších experimentoch preto používame $M = 2$.
 
 \todo{Veľa rôznych meraní s peknými grafmi.}

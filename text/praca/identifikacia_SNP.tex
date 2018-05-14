@@ -328,6 +328,7 @@ výpočty.
 \todo{Graf: Distribúcia aposteriórneho skóre pri použití desiatej odmocniny}
 
 \section{Pozície blízko SNP}
+\label{sec:blizke_pozicie}
 
 Postup, ktorý popisujeme v časti \ref{sec:jedna_pozicia} máva často problémy pri pozíciách, na ktorých nie je SNP, ale nachádzajú
 sa blízko nejakého SNP. Pri týchto pozíciách totiž žiadna zo štyroch uvažovaných hypotéz nezodpovedá realite, nakoľko všetky predpokladajú,
@@ -459,13 +460,13 @@ V časti \todo{referencia na experiment} porovnávame tento prístup s pôvodný
 
 
 \section{Vylepšenia}
-
+\label{sec:vylepsenia}
 Pri testovaní nášho modelu na reálnych dátach nastávali aj situácie, keď mal problém správne určiť 
 prítomnosť SNP na nejakej pozícii. Skúmaním takýchto situácií sme dospeli k dvom malým vylepšeniam,
 ktoré zvýšili presnosť modelu.
 
 \subsection{Doladenie normalizácie}
-
+\label{upg:tweaking}
 Jedným z dôvodov, prečo náš model niekedy považoval správnu hypotézu za menej pravdepodobnú než
 niektorú z nesprávnych, bol systematický posun skutočného signálu od očakávaného, v rámci celého
 čítania. Tento problém sa snažíme riešiť doladením normalizácie signálu.
@@ -487,6 +488,7 @@ funkciou \texttt{scipy.interpolate.splrep}.
 Doladenie normalizácie mierne spresnilo náš model, toto spresnenie meriame v časti \todo{referencia}.
 
 \subsection{Modelovanie cúvania}
+\label{upg:flashbacks}
 
 V signáli sa občas vyskytuje nasledujúci vzor. Signál sa drží blízko nejakej hladiny $h_1$ a očakávame, 
 že po posunutí ďalšej bázy do nanopóru prejde na nejakú inú hladinu $h_2$. Namiesto toho signál 
