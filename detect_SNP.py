@@ -16,7 +16,6 @@ import os
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-o", "--output", help="output file for a posteriori probabilities (default: stdout)")
-parser.add_argument("-i", "--independent", help="treat each read independently", action='store_true')
 parser.add_argument("-k", "--kmer_model", help="file with kmer model to use", default="tombo")
 parser.add_argument("-g", "--group_name", help="name of group in fast5 files containing basecall info", default="Analyses/Basecall_1D_000")
 parser.add_argument("-c", "--configuration", help="config file with reresquiggle parameters", default="default.yaml")
@@ -85,14 +84,10 @@ for read_file in read_files:
 
   model.update_probabilities(reference, read, interesting)
   reads.append(read)
-  if args.independent:
-    for base in interesting:
-      base.output(outfile)
-      base.clear_probabilities()
-
-if not args.independent:
   for base in interesting:
     base.output(outfile)
+    base.clear_probabilities()
+
 
 if args.output:
   outfile.close()

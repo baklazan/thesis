@@ -449,9 +449,9 @@ public:
           {
             best = join(best, patch.back()[x - row_start[y]] * cost_to_end[y][x - row_start[y]]);
           }
-          if(best.is_nan()) printf("a\n");
+          best.log_val /= 10;
           result[position * 4 + i] = (best * SNP_prior).log_val;
-          for(int yy=y-patch_size; yy<y; yy++)
+          for(int yy= max(0, position - kmer_model->k + 1); yy<min(position + kmer_model->k, reference_length); yy++)
           {
             if(yy == position) continue;
             if(best.is_nan()) printf("b\n");
@@ -466,8 +466,8 @@ public:
           if(cost_to_end[y][x - row_start[y]].is_nan()) printf("e\n");
           best = join(best, candidates[0][x - row_start[y]] * cost_to_end[y][x - row_start[y]]);
         }
-        if(best.is_nan()) printf("c\n");
-        result[position * 4 + reference[position]] = (Probability(result[position * 4 + reference[position]]) + best.log_val * nonSNP_prior).log_val;
+        best.log_val /= 10;
+        result[position * 4 + reference[position]] = (Probability(result[position * 4 + reference[position]]) + best * nonSNP_prior).log_val;
       }
       
       cost_from_start[y] = vector<Probability>(row_end[y] - row_start[y], Probability::fromP(0));
@@ -501,6 +501,7 @@ public:
       }
     }
   }
+  
 };
 
 
@@ -509,7 +510,7 @@ extern "C"
   void compute_probabilities(int *reference, int reference_length, KmerModel *kmer_model, 
                              ResquiggledRead *read, int *interesting_positions, int interesting_count, double *result,
                              int min_event_length, int window_before, int window_after, int buffer_size, double penalty,
-                             bool flashbacks)
+                             bool flashbacks, double expected_SNPs)
   {
     Probability (*reresquiggle_func)(double*, int, vector<int>, int, int, KmerModel*, int, double) = flashbacks ? reresquiggle_flashback : reresquiggle;
     for(int i=0; i<interesting_count; i++)
@@ -539,6 +540,7 @@ extern "C"
         {
           kmer_ids.push_back(kmer_model->kmer_id(&reference[j]));
         }
+        double prior = letter == reference_value ? 1-expected_SNPs : expected_SNPs / 3;
         result[i * 4 + letter] = reresquiggle_func(&(read->signal[st_in_signal]),
                                                    en_in_signal - st_in_signal, 
                                                    kmer_ids, 
@@ -546,7 +548,7 @@ extern "C"
                                                    end_buffer, 
                                                    kmer_model, 
                                                    min_event_length,
-                                                   penalty).log_val;
+                                                   penalty).log_val / 10 + log(prior);
       }
       reference[pos] = reference_value;
     }
