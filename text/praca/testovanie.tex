@@ -45,7 +45,7 @@ neho vypočítal apriórne pravdepodobnosti.
 Pri experimentoch používame podmnožinu dát použitých v \cite{BasecallerComparison} a \todo{odkaz na
 dáta od Francúzov}.
 
-\section{Vyhodnocovanie}
+\section{Metriky}
 
 V našom modeli pri každej pozícii počítame aposteriórne pravdepodobnosti pre niekoľko hypotéz. Sčítaním
 pravdepodobností pre všetky tri hypotézy hovoriace, že na danej pozícii je iná báza ako v referencii,
@@ -85,9 +85,30 @@ Keď počítame ROC krivky pre naše experimenty, vždy uvažujeme rovnaký prah
 experimente. Neuvažujeme teda možnosť, že by sme v rôznych čítaniach v rámci jedného experimentu použili 
 rôzny prah.
 
-\subsection{}
+\subsection{Úspešnosť identifikácie}
 
-\todo{nazvať a popísať druhú metriku}.
+Pri identifikácii je náš hlavný cieľ trochu iný, než správne pre čo najviac pozícií určiť, či ide o SNP. Skôr
+je naším cieľom nájsť medzi všetkými pozíciami tých zopár, ktoré obsahujú SNP. Tento cieľ sa snažíme 
+reflektovať zavedením druhej metriky, ktorú nazývame \emph{úspešnosť identifikácie}. Úspešnosť identifikácie
+meriame pre každé čítanie zvlášť.
+
+\begin{definicia}
+Nech $s$ je počet pozícií v čítaní, na ktorých je  SNP. Nech $i$ je počet SNP, ktoré patria medzi $s$ pozícií
+s najvyšším skóre. \emph{Úspešnosť identifikácie} pre dané čítanie definujeme ako podiel $\nicefrac{i}{s}$.
+\end{definicia}
+
+Úspešnosť identifikácie je teda jedno číslo z rozsahu $0$ až $1$. Úspešnosť identifikácie je menej robustná,
+než ROC krivka. V čítaniach, kde je väčší podiel SNP, môžeme pri použití rovnakého modelu očakávať vyššiu úspešnosť identifikácie.
+V extrémnom prípade, keď sú na všetkých pozíciách SNP, bude mať ľubovoľný model úspešnosť identifikácie $1$.
+
+Ak podiel SNP v čítaní označíme ako $p$, úspešnosť identifikácie je rovná hodnote TPR v bode, 
+kde $\mathrm{TPR} \cdot p + \mathrm{FPR} \cdot (1-p) = p$. Tento bod sa typicky nachádza v časti ROC krivky s
+veľmi malým FPR.
+
+Pri vyhodnocovaní experimentu vypočítame úspešnosť identifikácie pre každé čítanie. Z týchto úspešností potom vypočítame
+vážený priemer, kde váha každého čítania je jeho dĺžka. Okrem tohto priemeru uvádzame aj (váženú) distribúciu 
+úspešnosti identifikácie pre jednotlivé čítania.
+
 
 \section{Výsledky}
 
@@ -97,15 +118,15 @@ V tejto časti porovnávame verziu nášho modelu popísanú v časti \ref{sec:j
 verziou popísanou v \ref{sec:blizke_pozicie}.
 
 Pri experimente sme použili 1000 čítaní s podielom SNP $1\%$. \todo{napísať, na koľkých čítaniach
-failla niektorá z prvých dvoch fáz (zarovnanie, alebo \resquiggle)?} Obe verzie nášho modelu sme na týchto dátach pustili s parametrom $M$ (minimálny počet hodnôt signálu zarovnaný k jednej báze) rovným $2$.
+failla niektorá z prvých dvoch fáz (zarovnanie, alebo \resquiggle)?} \todo{napísať, z ktorého datasetu pochádzajú čítania?} Obe verzie nášho modelu sme na týchto dátach pustili s parametrom $M$ (minimálny počet hodnôt signálu zarovnaný k jednej báze) rovným $2$.
 Vylepšenia popísané v \ref{sec:vylepsenia} zatiaľ nepoužívame.
 
 \todo{grafy}
 
 Na ROC krivke vidíme, že prístup s $3(2k-1)+1$ hypotézami je lepší pre nízke FPR, 
 kým prístup so štyroma
-hypotézami je lepší pre vysoké TPR. Keďže pri identifikácii nás zaujíma najmä časť ROC krivky s
-veľmi nízkymi FPR, v metrike \todo{} je prístup s $3(2k-1)+1$ hypotézami lepší. V ďalších 
+hypotézami je lepší pre vysoké TPR. Keďže pri identifikácii je dôležitá najmä časť ROC krivky s
+veľmi nízkymi FPR, v úspešnosti identifikácie je prístup s $3(2k-1)+1$ hypotézami lepší. V ďalších 
 experimentoch preto používame prístup s $3(2k-1)+1$ hypotézami.
 
 Hlavným dôvodom zavedenia nových hypotéz bola snaha lepšie vyhodnocovať pozície blízko SNP. Preto 
@@ -149,4 +170,70 @@ dáta ako v \ref{exp:4vsMany}.
 Vidíme, že najväčšiu presnosť náš model dosahuje pri $M = 2$ a $M = 3$, pre $M > 3$ začne presnosť
 výrazne klesať. V ďalších experimentoch preto používame $M = 2$.
 
-\todo{Veľa rôznych meraní s peknými grafmi.}
+\subsection{Porovnanie s priamočiarym prístupom}
+
+K identifikácii variantov sa dá pristupovať aj priamočiarejšie, než k nej pristupuje náš model:
+zo signálu by sme mohli pomocou basecallera určiť bázy a následne hľadať rozdiely medzi postupnosťou
+báz z basecallera a referenciou.
+
+V našej práci sme sa snažili navrhnúť model, ktorý by bol presnejší, než takýto priamočiary
+prístup. V tejto časti preto navrhneme, ako identifikovať SNP len na základe referencie a postupnosti
+báz, ktorú zo signálu vypočíta basecaller. Tento postup potom porovnáme s naším modelom.
+
+\subsubsection{Priamočiary prístup}
+
+Postupnosť báz, ktorú nám dá basecaller, budeme volať \emph{vzorka}. Keďže basecaller nevie,
+akú dlhú postupnosť sme sekvenovali, dĺžka vzorky sa nemusí zhodovať s dĺžkou 
+zodpovedajúcej časti referencie.
+Na niektorých miestach basecaller nájde viac báz, než tam reálne je, na iných zasa niektoré
+bázy nenájde.
+
+Na začiatku preto vzorku pomocou nástroja BWA-MEM zarovnáme k referencii. 
+Toto zarovnanie nám určuje, ktoré časti referencie a vzorky si vzájomne zodpovedajú, pričom
+niektoré pozície z referencie nemusia zodpovedať žiadnym pozíciám zo vzorky, a obrátene. Zarovnanie v podstate hovorí, ktoré časti referencie 
+a ktoré časti vzorky treba vynechať, aby k sebe to, čo zostane, čo najlepšie pasovalo. 
+
+\todo{obrázok: dve zarovnané DNA postupnosti}
+
+Na základe
+tohto zarovnaia rozdelíme pozície v referencii na štyri skupiny:
+
+\begin{description}
+
+\item[Delécie.] Pozície v referencii, ktorým nezodpovedá žiadna pozícia zo vzorky.
+\item[Substitúcie.] Pozície v referencii, kde sa báza z referencie líši od zodpovedajúcej
+bázy vo vzorke.
+\item[Blízko inzercií.] Pozície v referencii, ktorých zodpovedajúca pozícia vo vzorke susedí
+s časťou vzorky, ktorá nezodpovedá ničomu v referencii. Budeme pritom vyžadovať, aby nešlo
+o substitúcie.
+\item[Zhody:] Pozície, kde sa báza v referencii zhoduje s bázou vo vzorke a nie sú blízko inzercií.
+
+\end{description}
+
+Podobne ako pri pravdepodobnostnom modeli, každej pozícii priradíme skóre vyjadrujúce,
+ako veľmi si myslíme, že ide o SNP. Toto skóre bude závisieť iba od toho, do ktorej zo štyroch skupín
+daná pozícia patrí. Budú teda existovať iba štyri možné hodnoty skóre, ROC krivka pre tento prístup
+teda bude mať iba 5 bodov (pričom jeden z nich bude $\mathrm{TPR} = 0, \mathrm{FPR} = 0$ a
+jeden bude $\mathrm{TPR} = 1, \mathrm{FPR} = 1$).
+
+Tieto štyri možné hodnoty skóre určujeme nasledujúcim spôsobom. Na niekoľkých trénovacích čítaniach
+sme pre každú zo štyroch skupín $G$ odmerali, aká časť všetkých pozícií, na ktorých je SNP, patrí do skupiny $G$ 
+(toto číslo označme $V(G)$)
+ a aká časť všetkých pozícií bez SNP patrí do skupiny $G$ (toto číslo označme $N(G)$). 
+Hodnotu $V(G)$ používame ako podmienenú pravdepodobnosť, že by pozícia so SNP bola v skupine $G$
+a hodnotu $N(G)$ používame ako podmienenú pravdepodobnosť, že by pozícia bez variantu bola v skupine 
+$G$. Pre každú pozíciu potom na základe týchto podmienených pravdepodobností a apriórnej 
+pravdepodobnosti, že na danej pozícii je SNP, vypočítame aposteriórnu pravdepodobnosť, že je na tejto
+pozícii SNP. Táto aposteriórna pravdepodobnosti bude skóre pre danú pozíciu.
+
+\subsection{Experimenty}
+
+Priamočiary prístup porovnávame s naším modelom v ôsmich experimentov. V prvých štyroch experimentoch
+používame 1000 čítaní z \todo{dataset} s podielom SNP postupne $0,1\%; 0,3\%, 1\%$ a $3\%$. V ďalších
+štyroch experimentoch používame 1000 čítaní z \todo{druhý dataset}, s rovnakými podielmi SNP.
+
+Pri vyhodnocovaní úspešnosti identifikácie priamočiareho prístupu sa nám stáva, že nevieme jednoznačne
+vybrať $s$ pozícií s najvyšším skóre, pretože veľa pozícií má rovnaké skóre. V takých prípadoch spomedzi
+kandidátov s rovnako vysokým skóre vyberáme náhodne.
+
+\todo{grafy}.
