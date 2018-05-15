@@ -1,7 +1,7 @@
 #!/bin/bash
 
-if [ "$#" -ne 4 ]; then
-    echo "usage: $0 read_basedir reference_fasta result_dir SNP_percentage"
+if [ $# -lt 4 -o $# -gt 5 ]; then
+    echo "usage: $0 read_basedir reference_fasta result_dir SNP_percentage [basecall group]"
     exit 1
 fi
 
@@ -9,6 +9,11 @@ READ_BASEDIR=$1
 REFERENCE_FASTA=$2
 RESULT_DIR=$3
 SNP_PERCENTAGE=$4
+
+GROUP=""
+if [ $# -eq 5 ]; then
+  GROUP="--basecall-group $5"
+fi
 
 set -e
 mkdir $RESULT_DIR
@@ -26,7 +31,7 @@ do
 done
 
 echo "[prepare]: initial resquiggle..."
-tombo resquiggle $RESULT_DIR $REFERENCE_COPY --overwrite --bwa-mem-executable bwa #--quiet 2> /dev/null
+tombo resquiggle $RESULT_DIR $REFERENCE_COPY --overwrite --bwa-mem-executable bwa $GROUP #--quiet 2> /dev/null
 
 echo "[prepare]: preparing directory for reads..."
 mkdir $RESULT_DIR/reads
@@ -52,5 +57,5 @@ do
   set +e
   bwa index $read_dir/reference.fasta 2> /dev/null
   set -e
-  tombo resquiggle $read_dir $read_dir/reference.fasta --overwrite --bwa-mem-executable bwa --quiet 2> /dev/null
+  tombo resquiggle $read_dir $read_dir/reference.fasta --overwrite --bwa-mem-executable bwa $GROUP --quiet 2> /dev/null
 done
