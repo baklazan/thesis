@@ -12,6 +12,7 @@
 \usepackage[hidelinks,breaklinks]{hyperref}
 \usepackage[slovak]{babel} % vypnite pre prace v anglictine
 \usepackage{siunitx}
+\usepackage{nicefrac}
 \linespread{1.25} % hodnota 1.25 by mala zodpovedat 1.5 riadkovaniu
 
 
@@ -20,7 +21,16 @@
 }
 \DeclarePairedDelimiter\abs{\lvert}{\rvert}
 \newcommand{\kmer}[1]{$k$-mer#1}
+\newcommand{\resquiggle}{\texttt{resquiggle}}
 \newcommand{\bazy}{\{\texttt{A}, \texttt{C}, \texttt{G}, \texttt{T}\}}
+
+\newcounter{TodoCounter}
+\newcommand{\todo}[1]{
+\stepcounter{TodoCounter} 
+\textbf{TODO \theTodoCounter:} #1
+}
+\newcommand*\diff{\mathop{}\!\mathrm{d}}
+
 
 \hyphenation{MinION}
 \hyphenation{MinIONa}
@@ -229,13 +239,13 @@ Slovak translation of abstract coming here.
 
 \input ciele.tex
 
-\input zarovnanie.tex
-
 \input identifikacia_SNP.tex
+
+\input testovanie.tex
 
 \input identifikacia_indel.tex
 
-\input testovanie.tex
+
 
 \input zaver.tex
 

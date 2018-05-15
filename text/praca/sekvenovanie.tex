@@ -7,7 +7,7 @@ Genetická informácia je v prírode často kódovaná deoxyribonukleovou kyseli
 do tvaru dvojzávitnice. Každé vlákno obsahuje postupnosť dusíkatých báz, ktorá kóduje informáciu. V DNA 
 sa 
 vyskytujú štyri
-dusíkaté bázy: adenín (A), cytozín (C), guanín (G) a tymín (T). Postupnosti báz v jednotlivých vláknach 
+dusíkaté bázy: adenín (\texttt{A}), cytozín (\texttt{C}), guanín (\texttt{G}) a tymín (\texttt{T}). Postupnosti báz v jednotlivých vláknach 
 sú 
 komplementárne: na pozíciách, kde má prvé vlákno adenín 
 (resp. cytozín, guanín, tymín) má druhé vlákno tymín (resp. guanín, cytozín, adenín). Na 
@@ -32,7 +32,7 @@ ktorá sa práve nachádza v najužšej časti nanopóru, má vplyv na elektrick
 bázy ovplyvňujú elektrický prúd rôznym spôsobom. Pri sekvenovaní sa meria priebeh elektrického prúdu v 
 čase a na základe jeho zmien sa potom určuje, aké bázy prešli cez nanopór \cite{Branton2008}.
 
-%TODO: obrázok
+\todo{obrázok}
 
 \subsection{Sekvenátor MinION}
 
@@ -45,7 +45,7 @@ sekundu. Hodnota elektrického prúdu sa zaznamenáva $4000$-krát za sekundu, t
 krát na bázu. Namerané hodnoty prúdu sa pre každé čítanie ukladajú do zvlášť súboru vo formáte 
 \texttt{.fast5}. Tieto nespracované dáta budeme nazývať \emph{surový signál}.
 
-%TODO: obrázok
+\todo{obrázok}
 
 \subsubsection{Normalizácia signálu}
 
@@ -90,7 +90,7 @@ udalosťami sa vlákno DNA väčšinou posunie o jednu bázu. Keďže však rozd
 presne zodpovedať posunom DNA vlákna v nanopóre, uvažuje sa aj možnosť, že sa vlákno medzi udalosťami 
 neposunulo, prípadne posunulo o viac než jednu bázu.
 
-%TODO: obrázok
+\todo{obrázok}
 
 Niektoré basecallery (napr. Nanocall \cite{Nanocall2017}) modelujú prechod DNA vlákna nanopórom ako 
 skrytý Markovovský model. Skrytým stavom je \kmer{}, ktorý sa práve nachádza v nanopóre a ovplyvňuje 
