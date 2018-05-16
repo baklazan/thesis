@@ -13,8 +13,15 @@
 \usepackage[slovak]{babel} % vypnite pre prace v anglictine
 \usepackage{siunitx}
 \usepackage{nicefrac}
+\usepackage[norefs,nocites]{refcheck}
+
+\usepackage{caption}
+\usepackage{subcaption}
+
+%\usepackage[showframe]{geometry}
 \linespread{1.25} % hodnota 1.25 by mala zodpovedat 1.5 riadkovaniu
 
+\uchyph=0
 
 \newcommand{\median}[2]{
 \mathrm{MEDIAN}_{#1}^{#2}
@@ -30,7 +37,7 @@
 \textbf{TODO \theTodoCounter:} #1
 }
 \newcommand*\diff{\mathop{}\!\mathrm{d}}
-
+\newcommand{\grafref}[1]{Obr. \ref{#1}}
 
 \hyphenation{MinION}
 \hyphenation{MinIONa}
@@ -172,7 +179,7 @@ Fakulta matematiky, fyziky a informatiky
 \newpage 
 \section*{Abstrakt}
 
-Tu bude abstrakt.
+
 
 \paragraph*{Kľúčové slová:} 
 % --- Koniec Abstrakt - Slovensky
@@ -223,10 +230,10 @@ Slovak translation of abstract coming here.
 % --- Zoznamy tabuliek, obrázkov - nepovinne
 % -------------------
 
-\newpage 
+% \newpage 
 
-\listoffigures
-\listoftables
+% \listoffigures
+% \listoftables
 
 % ---  Koniec Zoznamov
 
@@ -243,11 +250,12 @@ Slovak translation of abstract coming here.
 
 \input testovanie.tex
 
-\input identifikacia_indel.tex
-
-
-
 \input zaver.tex
+
+\todo{napísať úvod}
+\todo{napísať abstrakt}
+\todo{napísať záver}
+\todo{fixnúť \theTodoCounter{} todos a odstrániť command \texttt{todo}}
 
 % -------------------
 % --- Bibliografia

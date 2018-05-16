@@ -2,6 +2,28 @@
 
 \label{kap:ciele}
 
+
+\section{Varianty v DNA}
+
+V prírode sa často vyskytujú dvojice DNA molekúl, ktoré obsahujú veľmi podobnú postupnosť báz, líšiacu sa iba v malých detailoch. Typickým príkladom sú DNA dvoch rôznych jedincov rovnakého druhu. Tieto malé odlišnosti v DNA voláme \emph{varianty}. Najjednoduchšie druhy variantov sú nasledujúce.
+
+\begin{description}
+\item [Jednonukleotidový polymorfizmus (SNP\footnotemark).]\footnotetext{z anglického \emph{\textbf{s}ingle \textbf{n}ucleotide \textbf{p}olymorphism}} Jedna báza z prvej DNA postupnosti sa v druhej postupnosti nahradí inou bázou.
+
+\item [Inzercia.] Do postupnosti je vsunutá skupina báz.
+
+\item [Delécia.] Z postupnosti vypadne súvislá skupina báz.
+
+\end{description}
+
+\begin{figure}[t]
+\centerline{\includegraphics[width=0.4\textwidth]{images/varianty}}
+\caption[Varianty v DNA]{Jednonukleotidový polymorfyzmus, inzercia a delécia.}
+\label{obr:varianty}
+\end{figure}
+
+\section{Identifikácia variantov}
+
 Pri niektorých využitiach DNA sekvenovania sa sekvenuje vzorka, o ktorej je známe, že by
 sa mala podobať na inú, už osekvenovanú DNA. 
 Cieľom sekvenovania je potom zistiť, ako sa tieto dve DNA postupnosti líšia. Jedným z takýchto využití 
@@ -9,7 +31,7 @@ je napríklad zisťovanie rezistencie baktérií na antibiotiká \cite{Bradley20
 
 V našej práci sa budeme zaoberať nasledujúcim scenárom. Máme nejakú známu postupnosť
 dusíkatých báz, ktorú budeme nazývať \emph{referencia}. Ďalej máme vzorku DNA, o ktorej vieme,
-že sa od referencie líši len veľmi málo. Táto vzorka bola spracovaná MinIONom, máme teda k dispozícii
+že sa od referencie líši len veľmi málo. Táto vzorka bola spracovaná prístrojom MinION, máme teda k dispozícii
 nameraný surový signál z jednotlivých čítaní. Naším cieľom je identifikovať varianty v sekvenovanej
 vzorke vzhľadom na referenciu. Ideálne by bolo vedieť s dobrou presnosťou určovať varianty už z jedného čítania.
 
@@ -36,7 +58,6 @@ naozaj ide o variant. Znižovaním minimálneho skóre, ktoré budeme vyžadova�
 považovali za skutočný, bude možné znížit množstvo falošných odmietnutí za cenu zvýšenia množstva 
 falošných prijatí, a obrátene.
 
-\section{Rozdiel oproti určovaniu báz}
 
 Jedným z možných riešení nášho problému je určiť zo signálu bázy pomocou niektorého z existujúcich 
 basecallerov a následne už len zisťovať odlišnosti dvoch postupností báz. Problémom tohoto riešenia

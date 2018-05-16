@@ -24,20 +24,20 @@ technológie sú typické rôzne dĺžky čítaní, ktoré produkujú.
 
 Jednou z najnovších sekvenačných technológií je nanopórové sekvenovanie. Vyznačuje sa dlhými čítaniami,
 nízkou cenou a dostupnosťou prvých dát už počas sekvenovania, ale aj veľkým množstvom chýb v 
-jednotlivých čítaniach. Pri nanopórovom sekvenovaní sa vo vhodne zvolenej membráne vytvorí 
+jednotlivých čítaniach \cite{Laver2015}. Pri nanopórovom sekvenovaní sa vo vhodne zvolenej membráne vytvorí 
 \emph{nanopór}, t. j. otvor s priemerom rádovo $1 \si{nm}$. Membránou sa oddelia dve komory s 
 elektrolytom, pričom v jednej z komôr sa nachádza aj predpripravená vzorka DNA.
-Po zavedení elektrického napätia medzi komorami začne nanopórom tiecť iónový prúd. Jedno vlákno DNA sa postupne oddeľuje od druhého a prechádza nanopórom. Časť vlákna, 
+Po zavedení elektrického napätia medzi komorami začne nanopórom tiecť iónový prúd. Jedno vlákno DNA
+ sa postupne oddeľuje od druhého a prechádza nanopórom. Časť vlákna, 
 ktorá sa práve nachádza v najužšej časti nanopóru, má vplyv na elektrický prúd tečúci cez nanopór. Rôzne 
 bázy ovplyvňujú elektrický prúd rôznym spôsobom. Pri sekvenovaní sa meria priebeh elektrického prúdu v 
 čase a na základe jeho zmien sa potom určuje, aké bázy prešli cez nanopór \cite{Branton2008}.
 
 \todo{obrázok}
 
-\subsection{Sekvenátor MinION}
-
-Prístroj MinION je nanopórový sekvenátor vyrábaný firmou Oxford Nanopore Technologies. V našej práci 
-budeme používať dáta získané týmto sekvenátorom. V MinIONe sa používa polymérová membrána, do ktorej sú 
+V našej práci budeme pracovať s dátami zo sekvenátora MinION.
+Prístroj MinION je nanopórový sekvenátor vyrábaný firmou Oxford Nanopore Technologies.
+V sekvenátori MinION sa používa polymérová membrána, do ktorej sú 
 zasadené proteínové nanopóry. Sekvenátor obsahuje stovky nanopórov, dokáže teda sekvenovať niekoľko DNA 
 vlákien súčasne.
 Vo verzii, s ktorou pracujeme, prechádza vlákno DNA cez nanopór rýchlosťou približne $400$ báz za 
@@ -47,13 +47,12 @@ krát na bázu. Namerané hodnoty prúdu sa pre každé čítanie ukladajú do z
 
 \todo{obrázok}
 
-\subsubsection{Normalizácia signálu}
+\subsection{Normalizácia signálu}
 
 Surový signál závisí nielen od úseku DNA nachádzajúceho sa v nanopóre, ale aj od ďalších faktorov, ktoré 
 sa pre rôzne čítania môžu líšiť. Pred ďalším spracovaním je preto potrebné surový signál znormalizovať.
 
-Jednou z metód normalizácie je \emph{mediánová normalizácia}, ktorú navrhujú Stoiber et. al. v 
-\cite{Stoiber2017}.
+Jednou z metód normalizácie je \emph{mediánová normalizácia}, ktorú navrhujú Stoiber et. al. \cite{Stoiber2017}
 
 \begin{definicia}
 Nech $a_1, a_2, \dots, a_n \in \mathbb{R}$. Symbolom
@@ -71,9 +70,9 @@ $$s_i = \frac{r_i - M}{D} \text{.}$$
 
 \end{definicia}
 
-\subsubsection{Určovanie báz}
+\subsection{Určovanie báz}
 
-Na základe signálu nameraného MinIONom sa určuje, aké dusíkaté bázy prechádzali nanopórom, keď bol
+Na základe signálu nameraného zariadením MinION sa určuje, aké dusíkaté bázy prechádzali nanopórom, keď bol
 tento signál zaznamenaný. Táto úloha je pomerne náročná a v súčasnosti sa stále vyvíjajú lepšie a
 lepšie riešenia. Programy, ktoré určujú bázy, nazývame \emph{basecallery}\footnote{z anglického \emph{base calling} -- určovanie báz.}.
 
@@ -93,13 +92,7 @@ neposunulo, prípadne posunulo o viac než jednu bázu.
 \todo{obrázok}
 
 Niektoré basecallery (napr. Nanocall \cite{Nanocall2017}) modelujú prechod DNA vlákna nanopórom ako 
-skrytý Markovovský model. Skrytým stavom je \kmer{}, ktorý sa práve nachádza v nanopóre a ovplyvňuje 
-signál. Viditeľným výstupom modelu sú udalosti. Z každého stavu (\kmer{u}) sú možné prechody do štyroch 
-\kmer{ov}, ktoré po ňom môžu nasledovať. Napríklad pre $k=6$ sa zo stavu \texttt{ACCGCT} dá prejsť do
-stavov \texttt{CCGCTA}, \texttt{CCGCTC}, \texttt{CCGCTG} a \texttt{CCGCTT}. Okrem toho je ešte, s menšou 
-pravdepodobnosťou, možný prechod naspäť do toho istého stavu (modelujúci udalosti, pri ktorých sa DNA 
-vlákno neposunulo) a prechody modelujúce posun o viac ako jednu bázu. Pravdepodobnostné distribúcie 
-hodnoty signálu pre jednotlivé \kmer{y} poskytuje výrobca MinIONa \cite{KmerModels}. Na základe tohto
+skrytý Markovovský model. Na základe tohto
 modelu sa Viterbiho algoritmom vypočíta najpravdepodobnejšia postupnosť báz, ktorá mohla vygenerovať 
 pozorovaný signál.
 
@@ -108,22 +101,3 @@ Iné basecallery sú založené na rekurentných neurónových sieťach. Niektor
 (napr. Chiron \cite{Chiron2017}).
 
 Najlepšie súčasné basecallery majú pre jedno čítanie presnosť okolo $85\%$ až $90\%$. Ak sa osekvenuje viac kópií rovnakej DNA, skombinovaním dostatočného počtu prekrývajúcich sa čítaní sa dá dosiahnuť presnosť okolo $99,9\%$ \cite{BasecallerComparison}.
-
-\section{Varianty v DNA}
-
-V prírode sa často vyskytujú dvojice DNA molekúl, ktoré obsahujú veľmi podobnú postupnosť báz, líšiacu sa iba v malých detailoch. Typickým príkladom sú DNA dvoch rôznych jedincov rovnakého druhu. Tieto malé odlišnosti v DNA voláme \emph{varianty}. Najjednoduchšie druhy variantov sú nasledujúce.
-
-\begin{description}
-\item [Jednonukleotidový polymorfizmus (SNP\footnotemark).]\footnotetext{z anglického \emph{\textbf{s}ingle \textbf{n}ucleotide \textbf{p}olymorphism}} Jedna báza z prvej DNA postupnosti sa v druhej postupnosti nahradí inou bázou.
-
-\item [Inzercia.] Do postupnosti je vsunutá skupina báz.
-
-\item [Delécia.] Z postupnosti vypadne súvislá skupina báz.
-
-\end{description}
-
-\begin{figure}
-\centerline{\includegraphics[width=0.4\textwidth]{images/varianty}}
-\caption[Varianty v DNA.]{Jednonukleotidový polymorfyzmus, inzercia a delécia.}
-\label{obr:varianty}
-\end{figure}
