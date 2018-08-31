@@ -60,12 +60,15 @@ falošných prijatí, a obrátene.
 
 
 Jedným z možných riešení nášho problému je určiť zo signálu bázy pomocou niektorého z existujúcich 
-basecallerov a následne už len zisťovať odlišnosti dvoch postupností báz. Problémom tohoto riešenia
+prekladačov báz a následne už len zisťovať odlišnosti dvoch postupností báz. Problémom tohoto riešenia
 je nízka presnosť (ak nemáme veľa prekrývajúcich sa čítaní). 
 
-Pri tomto prístupe však basecaller vôbec
+Pri tomto prístupe však prekladač báz vôbec
 nevyužíva fakt, že sekvenovaná postupnosť sa podobá na referenciu. Uvažuje teda podstatne väčší 
 priestor možných výsledných sekvencií, než je nutné. V dôsledku toho upredňostňuje sekvencie, ktoré 
 lepšie vysvetľujú pozorovaný signál, aj keď môžu byť výrazne vzdialené od referencie.
 Zmenšenie priestoru uvažovaných sekvencií môže navyše znížiť výpočtovú náročnosť určovania báz, prípadne
 umožniť použitie presnejších techník, ktoré by za normálnych okolností boli príliš časovo náročné.
+
+V našej práci sa preto budeme snažiť nájsť riešenie, ktoré bude pri spustení na jednom čítaní presnejšie,
+než porovnanie referencie s výstupom z prekladača báz.

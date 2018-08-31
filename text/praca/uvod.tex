@@ -5,24 +5,24 @@
 DNA nesie genetickú informáciu zakódovanú v postupnosti štyroch
 dusíkatých báz: adenínu, cytozínu, guanínu a tymínu.
 Od sedemdesiatych rokov dvadsiateho storočia vznikajú stále nové
-techniky ako sekvenovať DNA, teda ako pre fyzickú vzorku DNA zistiť
+techniky na sekvenovanie DNA, čo znamená pre fyzickú vzorku DNA zistiť
 jej postupnosť báz.
 
 Nanopórové sekvenovanie je technika sekvenovania DNA, pri ktorej jedno vlákno
 DNA prechádza veľmi malým otvorom (nanopórom) a ovplyvňuje pritom elektrický
-prúd prechádzajúci týmto otvorom. Tento prúd sa meria a na základe jeho
-zmien sa potom určuje, aké bázy prechádzali nanopórom. Nanopórové sekvenovanie
+prúd prechádzajúci týmto otvorom. Na základe merania
+zmien tohto prúdu možno určiť, aké bázy prechádzali nanopórom. Nanopórové sekvenovanie
 má oproti iným technikám sekvenovania niekoľko výhod,
 umožňuje napríklad pomerne lacno a rýchlo sekvenovať DNA už v malých množstvách.
 Jeho veľkou nevýhodou je však veľké množstvo chýb, ktorých sa pri sekvenovaní dopúšťa.
 
-V niektorých aplikáciách sekvenujeme DNA, o ktorej dopredu vieme, že vyzerá, až na 
-drobné odlišnosti, ako nejaká známa postupnosť báz.
-Cieľom sekvenovania vtedy býva práve nájdenie týchto odlišností (nazývaných aj varianty). Pri použití
+V niektorých aplikáciách sekvenujeme DNA, u ktorej je dopredu známa postupnosť jej báz, až na 
+drobné odlišnosti, ktoré nazývame varianty.
+Cieľom sekvenovania je vtedy nájdenie týchto variantov. Pri použití
 nanopórového sekvenovania na hľadanie variantov narazíme na problém, že veľa
 variantov, ktoré nájdeme, sú v skutočnosti iba nepresnosti v sekvenovaní. V tejto
 práci sa snažíme nájsť spôsob, ako využiť dotatočnú informáciu o sekvenovanej DNA
-(že sa podobá na známu postupnosť) už vo fáze prevádzania nameraného elektrického
+(t. j. to, že sa podobá na známu postupnosť) už vo fáze prevádzania nameraného elektrického
 prúdu na postupnosť báz a zvýšiť tým presnosť identifikácie variantov.
 
 V kapitole \ref{kap:sekvenovanie} detailnejšie popíšeme proces sekvenovania DNA konkrétnym 
@@ -31,6 +31,6 @@ práce.
 V kapitole \ref{kap:identifikacia_SNP} navrhneme spôsob, ako identifikovať najjednoduchší
 druh variantov -- jednonukleotidové polymorfizmy.
 V kapitole \ref{kap:testovanie} tento spôsob otestujeme na reálnych dátach z prístroja MinION.
- Najprv experimentálne nájdeme vhodné parametre pre náš model a potom
-ho porovnáme s priamočiarejším prístupom, ktorý danú DNA osekvenuje a výsledok sekvenovania porovná
+ Najprv experimentálne nájdeme vhodné parametre pre náš model, a potom
+ho porovnáme s priamočiarejším prístupom, ktorý najprv určí postupnosť báz zo signálu a takýto výsledok sekvenovania porovná
 s postupnosťou, na ktorú sa má podobať.

@@ -2,6 +2,28 @@
 \addcontentsline{toc}{chapter}{Záver} % rucne pridanie do obsahu
 \markboth{Záver}{Záver} % vyriesenie hlaviciek
 
-Na záver zhrnieme výsledky, ktoré sa nám podarilo dosiahnuť.
+Cieľom tejto práce bolo navrhnúť nový algoritmus na identifikáciu variantov zo surových dát sekvenačného
+prístroja MinION, ktorý by bol presnejší, než porovnanie
+referencie s výstupom z prekladača báz. Toto spresnenie sme sa snažili dosiahnuť využitím informácie,
+ktorú prekladač báz nevyužíva: že sekvenovaná postupnosť sa musí podobať na referenciu.
 
+Vytvorili a implementovali sme pravdepodobnostný model, ktorý identifikuje SNPy na základe signálu z jedného čítania.
+V ideálnych podmienkach, teda keď sekvenovaná postupnosť neobsahuje žiadne varianty okrem malého množstva SNPov a dopredu vieme, koľko SNPov máme očakávať, je náš model pri testovaní presnejší,
+než porovnanie výstupu z prekladača báz s referenciou.  Hoci k presnej identifikácii variantov všetkých druhov
+máme ešte ďaleko, tento výsledok vzbudzuje nádej, že využitie znalosti referencie pri spracovaní signálu
+môže naozaj spresniť identifikáciu variantov.
 
+Pravdepodobnostný model, ktorý sme navrhli, by sa dal v budúcnosti rozšíriť dvoma spôsobmi.
+Môžeme ho rozšíriť na model, ktorý identifikuje SNPy aj z viacerých čítaní jednej sekvencie.
+Pre niektoré hypotézy dostaneme podmienené pravdepodobnosti z viacerých čítaní. Aposteriórnu
+pravdepodobnosť danej hypotézy budeme potom počítať z apriórnej pravdepodobnosti a všetkých týchto
+podmienených pravdepodobností.
+
+Ďalšou možnosťou je rozšíriť model, aby bolo pomocou neho možné identifikovať aj krátke inzercie
+a delécie. Stačí pre jednotlivé pozície začať uvažovať aj hypotézy hovoriace, že na danej pozícii je inzercia,
+prípadne delécia. Rozšírenie na dlhšie inzercie je problematické, lebo s dĺžkou inzercie exponenciálne rastie
+počet možností, aké bázy boli do postupnosti vložené a tým aj počet hypotéz.
+
+Presnejšie, než rozšírenia nášho modelu, však možno budú fungovať úplne iné prístupy.
+Najlepšie súčasné prekladače báz pre prístroj MinION sú založené na neurónových sieťach, je teda dosť dobre možné,
+že aj identifikácia variantov sa bude dať riešiť presnejšie pomocou neurónovej siete.

@@ -25,12 +25,12 @@ kratšie fragmenty sekvenovanej DNA), v prvej fáze spracovania každého číta
 je naším cieľom zistiť, ktorej časti referencie zodpovedá. To robíme v dvoch krokoch:
 
 \begin{enumerate}
-\item \label{item:basecall} Pomocou basecallera preložíme signál v našom čítaní do DNA sekvencie.
+\item \label{item:basecall} Pomocou prekladača báz preložíme signál v našom čítaní do DNA sekvencie.
 \item \label{item:zarovnanie_baz} Nájdeme časť referencie, ktorá sa tejto sekvencii najviac podobá.
 \end{enumerate}
 
-Na realizáciu kroku \ref{item:basecall} používame basecaller Albacore poskytovaný priamo výrobcom sekvenátora MinION.
-Presnosť tohto basecallera sa pohybuje v rozmedzí $85\%$ až $90\%$ \cite{BasecallerComparison},
+Na realizáciu kroku \ref{item:basecall} používame prekladač báz Albacore poskytovaný priamo výrobcom sekvenátora MinION.
+Presnosť tohto prekladača báz sa pohybuje v rozmedzí $85\%$ až $90\%$ \cite{BasecallerComparison},
 výstup teda nebude úplne presne zodpovedať sekvenovanej
 DNA. V praxi je však takáto presnosť na krok \ref{item:zarovnanie_baz} väčšinou dostatočná.
 Problém, ktorý riešime v kroku \ref{item:zarovnanie_baz}, je známy ako
@@ -74,8 +74,6 @@ preto štyri hypotézy. Prvá hypotéza je, že v sekvenovanej postupnosti je na
 pozícii \texttt{A} a na okolitých pozíciách rovnaké bázy ako v referencii. Zvyšné tri hypotézy sú
 analogické, s \texttt{C}, \texttt{G} a \texttt{T}. Jedna z hypotéz teda vždy hovorí, že na danej
 pozícii nie je variant, zvyšné tri tvrdia, že sa na tejto pozícii nachádza SNP.
-
-\todo{obrázok}
 
 Pre každú zo štyroch hypotéz ohodnotíme, ako dobre vysvetľuje signál nameraný v okolí skúmanej
 pozície. Vezmeme výsek $T$ z referencie obsahujúci skúmanú pozíciu s okolím niekoľkých báz a úsek $S$
@@ -340,9 +338,6 @@ sa blízko nejakého SNPu. V grafe na Obr. \ref{fig:score_by_SNP_proximity} vid�
 oveľa častejšie než pozície ďaleko od SNPov, kým pozície ďaleko od SNPov majú oveľa častejšie skóre blízke nule.
 Pri týchto pozíciách totiž žiadna zo štyroch uvažovaných hypotéz nezodpovedá realite, nakoľko všetky predpokladajú,
 že na pozíciách v okolí skúmanej pozície sa sekvenovaný genóm zhoduje s referenciou.
-
-\todo{obrázok: referencia, reálna sekvencia a 4 hypotézy}
-
 Žiadna z hypotéz potom nedokáže dobre vysvetliť nameraný signál.
 
 \begin{figure}
@@ -355,9 +350,6 @@ Tento problém môžeme vyriešiť tak, že pre každú pozíciu berieme do úva
 sa SNP nachádza na niektorej z okolitých pozícií. Za okolité pozície pritom považujeme všetky pozície
 vzdialené nanajvýš $k-1$ od tej skúmanej, teda všetky pozície, ktoré v našom modeli majú nejaký vplyv
 na úsek signálu ovplyvnený skúmanou pozíciou.
-
-\todo{obrázok: sekvencia báz a zarovnaný signál, s vyznačenými časťami signálu ovplyvnenými skúmanou bázou a bázami vzdialenými $k-1$}
-
 Namiesto štyroch hypotéz teda budeme mať $3 \cdot (2k-1) + 1$ hypotéz: jedna hovorí, že v sekvenovanej 
 postupnosti nebol v okolí skúmanej pozície žiaden variant, tri hovoria, že na skúmanej pozícii je SNP a
 $3 \cdot (2k-2)$ hypotéz hovorí, že na niektorej z okolitých pozícií je SNP.
@@ -506,8 +498,13 @@ V signáli sa občas vyskytuje nasledujúci vzor. Signál sa drží blízko neja
 že po posunutí ďalšej bázy do nanopóru prejde na nejakú inú hladinu $h_2$. Namiesto toho signál 
 najprv na krátky čas prejde k hladine $h_2$, potom sa na chvíľu vráti na $h_1$ a až potom naozaj prejde
 na hladinu $h_2$, kde už zostane až do ďalšej zmeny spôsobenej posunutím sekvenovaného vlákna v nanopóre.
+Príklad takéhoto správania je na Obr. \ref{fig:flashback}.
 
-\todo{Obrázok signálu, pri ktorom pomôže modelovať cúvanie.}
+\begin{figure}
+\centerline{\includegraphics[width=0.4\textwidth]{images/cuvanie}}
+\caption{Reálny a očakávaný signál v situácii, kde sa signál na chvíľu vrátil na hladinu, z ktorej už odišiel.}
+\label{fig:flashback}
+\end{figure}
 
 Toto správanie by mohlo byť spôsobené tým, že sekvenované vlákno sa krátku chvíľu hýbe opačným smerom,
 pričom sa na chvíľu do nanopóru vráti báza, ktorá z neho práve vyšla. Keďže náš pravdepodobnostný

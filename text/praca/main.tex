@@ -31,11 +31,6 @@
 \newcommand{\resquiggle}{\texttt{resquiggle}}
 \newcommand{\bazy}{\{\texttt{A}, \texttt{C}, \texttt{G}, \texttt{T}\}}
 
-\newcounter{TodoCounter}
-\newcommand{\todo}[1]{
-\stepcounter{TodoCounter} 
-\textbf{TODO \theTodoCounter:} #1
-}
 \newcommand*\diff{\mathop{}\!\mathrm{d}}
 \newcommand{\grafref}[1]{Obr. \ref{#1}}
 
@@ -162,14 +157,14 @@ Fakulta matematiky, fyziky a informatiky
 % -------------------
 %   Poďakovanie - nepovinné
 % -------------------
-%\setcounter{page}{3}
-%\newpage 
-%~
+\setcounter{page}{3}
+\newpage 
+~
 
-%\vfill
-%{\bf Poďakovanie:} Tu môžete poďakovať školiteľovi, prípadne
-%ďalším osobám, ktoré vám s prácou nejako pomohli, poradili,
-%poskytli dáta a podobne.
+\vfill
+{\bf Poďakovanie:} Na tomto mieste by som sa rád poďakoval
+svojmu školiteľovi Tomášovi Vinařovi za jeho vedenie, ochotu pomôcť a
+trpezlivosť s mojím prístupom k povinnostiam.
 
 % --- Koniec poďakovania
 
@@ -179,9 +174,16 @@ Fakulta matematiky, fyziky a informatiky
 \newpage 
 \section*{Abstrakt}
 
+V niektorých aplikáciách sekvenovania DNA je potrebné zistiť, ako sa sekvenovaná DNA
+líši od referenčnej DNA postupnosti.  V našej práci navrhujeme pravdepodobnostný model,
+pomocou ktorého na základe referenčnej DNA a signálu zo sekvenátora MinION
+identifikujeme bázy, ktoré sa v sekvenovanej DNA líšia od referencie.
+Pri testovaní v ideálnych podmienkach dáva tento model presnejšie výsledky, než postup, ktorý 
+najprv zo signálu štandardným spôsobom určí postupnosť báz a potom túto postupnosť porovná s referenciou.
 
 
 \paragraph*{Kľúčové slová:} 
+sekvenovanie DNA, varianty, MinION
 % --- Koniec Abstrakt - Slovensky
 
 
@@ -191,11 +193,11 @@ Fakulta matematiky, fyziky a informatiky
 \newpage 
 \section*{Abstract}
 
-Slovak translation of abstract coming here.
+Some applications of DNA sequencing require us to determine the differences between the sequenced sample and the reference sequence. To address this problem, we propose a new approach based on a probabilistic model that can use the signal from MinION sequencer to identify such differences. Our model outperforms the standard approach of basecalling the signal and comparing the result to the reference, when evaluated under ideal setting.
 
 
 \paragraph*{Keywords:} 
-
+DNA sequencing, variants, MinION
 % --- Koniec Abstrakt - Anglicky
 
 % -------------------
@@ -252,10 +254,6 @@ Slovak translation of abstract coming here.
 
 \input zaver.tex
 
-\todo{napísať úvod}
-\todo{napísať abstrakt}
-\todo{napísať záver}
-\todo{fixnúť \theTodoCounter{} todos a odstrániť command \texttt{todo}}
 
 % -------------------
 % --- Bibliografia
@@ -297,8 +295,8 @@ Slovak translation of abstract coming here.
 %Nepovinná časť prílohy obsahuje materiály, ktoré neboli zaradené priamo  do textu. Každá príloha sa začína na novej strane.
 %Zoznam príloh je súčasťou obsahu.
 %
-%\addcontentsline{toc}{chapter}{Appendix A}
-%\input AppendixA.tex
+
+\input prilohaA.tex
 %
 %\addcontentsline{toc}{chapter}{Appendix B}
 %\input AppendixB.tex

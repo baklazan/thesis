@@ -3,8 +3,7 @@
 \label{kap:testovanie}
 
 Postupy popsísané v kapitole \ref{kap:identifikacia_SNP} sme implementovali v jazyku Python 3 s
-výpočtovo kritickými časťami implementovanými v C++.
-\todo{Odkázať na implementáciu na githube?}
+výpočtovo kritickými časťami implementovanými v C++ (\nameref{app:implementacia}).
 V tejto kapitole náš postup testujeme na reálnych dátach.
 
 
@@ -96,9 +95,13 @@ pozícií, ktoré náš model nesprávne označí ako SNPy, k počtu všetkých 
 \end{definicia}
 
 Zvolením vhodného prahu vieme dosiahnuť ľubovoľné FP medzi $0$ a $1$, za znižovanie FP však musíme
-platiť znižovaním TP. Krivka ROC je graf závislosti TP od FP. 
+platiť znižovaním TP. Krivka ROC je graf závislosti TP od FP. Príklad krivky ROC je na Obr. \ref{fig:ROC}.
 
-\todo{obrázok: príklad krivky ROC}
+\begin{figure}[t]
+\centerline{\includegraphics[width=0.7\linewidth]{images/ROC}}
+\caption{Príklad krivky ROC.}
+\label{fig:ROC}
+\end{figure}
 
 Čím presnejší je model, tým bližšie je jeho krivka k ľavému hornému rohu grafu (teda k bodu $
 \mathrm{FP} = 0, \mathrm{TP} = 1$).
@@ -264,19 +267,19 @@ $M$                       & 1         & 2         & 3         & 4         & 5   
 \subsection{Porovnanie s priamočiarym prístupom}
 
 K identifikácii variantov sa dá pristupovať aj priamočiarejšie, než k nej pristupuje náš model:
-zo signálu by sme mohli pomocou basecallera určiť bázy a následne hľadať rozdiely medzi postupnosťou
-báz z basecallera a referenciou.
+zo signálu by sme mohli pomocou prekladača báz určiť bázy a následne hľadať rozdiely medzi postupnosťou
+báz z prekladača a referenciou.
 
 V našej práci sme sa snažili navrhnúť model, ktorý by bol presnejší, než takýto priamočiary
-prístup. V tejto časti preto navrhneme, ako identifikovať SNPy len na základe referencie a postupnosti
-báz, ktorú zo signálu vypočíta basecaller. Tento postup potom porovnáme s naším modelom.
+prístup. V tejto časti preto navrhneme, ako identifikovať SNPy len na základe referencie a postupnosti,
+ktorú zo signálu vypočíta prekladač báz. Tento postup potom porovnáme s naším modelom.
 
 \subsubsection{Priamočiary prístup}
 
-Postupnosť báz, ktorú nám dá basecaller, budeme volať \emph{vzorka}. Keďže basecaller nevie,
+Postupnosť báz, ktorú nám dá prekladač, budeme volať \emph{vzorka}. Keďže prekladač báz nevie,
 akú dlhú postupnosť sme sekvenovali, dĺžka vzorky sa nemusí zhodovať s dĺžkou 
 zodpovedajúcej časti referencie.
-Na niektorých miestach basecaller nájde viac báz, než tam reálne je, na iných zasa niektoré
+Na niektorých miestach nájde prekladač viac báz, než tam reálne je, na iných zasa niektoré
 bázy nenájde.
 
 Na začiatku preto vzorku pomocou nástroja BWA-MEM zarovnáme k referencii. 
@@ -284,7 +287,6 @@ Toto zarovnanie nám určuje, ktoré časti referencie a vzorky si vzájomne zod
 niektoré pozície z referencie nemusia zodpovedať žiadnym pozíciám zo vzorky, a obrátene. Zarovnanie v podstate hovorí, ktoré časti referencie 
 a ktoré časti vzorky treba vynechať, aby k sebe to, čo zostane, čo najlepšie pasovalo. 
 
-\todo{obrázok: dve zarovnané DNA postupnosti}
 
 Na základe
 tohto zarovnaia rozdelíme pozície v referencii na štyri skupiny:
@@ -322,22 +324,28 @@ pozícii SNP. Táto aposteriórna pravdepodobnosti bude skóre pre danú pozíci
 Priamočiary prístup porovnávame s naším modelom pre $M=2$ a $M=3$ na všetkých ôsmich testovacích sadách.
 Pri vyhodnocovaní úspešnosti identifikácie priamočiareho prístupu sa nám stáva, že nevieme jednoznačne
 vybrať $s$ pozícií s najvyšším skóre, pretože veľa pozícií má rovnaké skóre. V takých prípadoch spomedzi
-kandidátov s rovnako vysokým skóre vyberáme náhodne. Krivky ROC uvádzame v grafe na Obr. \ref{fig:ROC_final}.
-Priemerné úspešnosti identifikácie uvádzame v tabuľke \ref{tab:uspesnost_final}. Distribúcie úspešnosti
-identifikácie uvádzame na Obr. \ref{fig:uspesnost_final}.
+kandidátov s rovnako vysokým skóre vyberáme náhodne. 
+
+Na krivkách ROC (Obr. \ref{fig:ROC_final}) vidíme, že v testovacích sadách s malým podielom SNPov je
+náš model lepší než priamočiary prístup. V testovacích sadách s väčším podielom SNPov je náš model lepší
+pre malé FP a horší pre veľké TP. Vidíme tiež, že kým priamočiary prístup je zhruba rovnako dobrý na
+všetkých sadách, nášmu modelu sa lepšie darí pri menšom podieli SNPov. Náš model má výrazne lepšiu 
+úspešnosť identifikácie (Tabuľka \ref{tab:uspesnost_final} a Obr. \ref{fig:uspesnost_final}) než priamočiary
+prístup. Pri vyšších podieloch SNPov dosahuje náš model aj priamočiary prístup vyššiu
+úspešnosť identifikácie, čo sa však pri tejto metrike dalo očakávať.
  
  
 \begin{figure}[!ht]
    \begin{center}
    \begin{minipage}{\textwidth}
      \centering
-     \includegraphics[width=.47\textwidth]{plots/1_ROC}\quad
+     \includegraphics[width=.47\textwidth]{plots/6_ROC_klebs_01}\quad
      \includegraphics[width=.47\textwidth]{plots/6_ROC_nanolution_01}\\
-     \includegraphics[width=.47\textwidth]{plots/1_ROC}\quad
+     \includegraphics[width=.47\textwidth]{plots/6_ROC_klebs_03}\quad
      \includegraphics[width=.47\textwidth]{plots/6_ROC_nanolution_03}\\
-     \includegraphics[width=.47\textwidth]{plots/1_ROC}\quad
+     \includegraphics[width=.47\textwidth]{plots/6_ROC_klebs_10}\quad
      \includegraphics[width=.47\textwidth]{plots/6_ROC_nanolution_10}\\
-     \includegraphics[width=.47\textwidth]{plots/1_ROC}\quad
+     \includegraphics[width=.47\textwidth]{plots/6_ROC_klebs_30}\quad
      \includegraphics[width=.47\textwidth]{plots/6_ROC_nanolution_30}
    \end{minipage}\\[1em]   
    \end{center}
@@ -349,14 +357,14 @@ identifikácie uvádzame na Obr. \ref{fig:uspesnost_final}.
    \begin{center}
    \begin{minipage}{\textwidth}
      \centering
-     \includegraphics[width=.47\textwidth]{plots/1_ROC}\quad
-     \includegraphics[width=.47\textwidth]{plots/1_ROC}\\
-     \includegraphics[width=.47\textwidth]{plots/1_ROC}\quad
-     \includegraphics[width=.47\textwidth]{plots/1_ROC}\\
-     \includegraphics[width=.47\textwidth]{plots/1_ROC}\quad
-     \includegraphics[width=.47\textwidth]{plots/1_ROC}\\
-     \includegraphics[width=.47\textwidth]{plots/1_ROC}\quad
-     \includegraphics[width=.47\textwidth]{plots/1_ROC}
+     \includegraphics[width=.47\textwidth]{plots/6_uspesnost_klebs_01}\quad
+     \includegraphics[width=.47\textwidth]{plots/6_uspesnost_nanolution_01}\\
+     \includegraphics[width=.47\textwidth]{plots/6_uspesnost_klebs_03}\quad
+     \includegraphics[width=.47\textwidth]{plots/6_uspesnost_nanolution_03}\\
+     \includegraphics[width=.47\textwidth]{plots/6_uspesnost_klebs_10}\quad
+     \includegraphics[width=.47\textwidth]{plots/6_uspesnost_nanolution_10}\\
+     \includegraphics[width=.47\textwidth]{plots/6_uspesnost_klebs_30}\quad
+     \includegraphics[width=.47\textwidth]{plots/6_uspesnost_nanolution_30}
    \end{minipage}\\[1em]   
    \end{center}
 \caption{Distribúcia úspešnosti identifikácie pre priamočiary prístup a pre náš model s $M=2$ a $M=3$.}
@@ -368,18 +376,16 @@ identifikácie uvádzame na Obr. \ref{fig:uspesnost_final}.
 \centering
 \caption{Priemerná úspešnosť identifikácie pre priamočiary prístup a pre náš model s $M=2$ a $M=3$.}
 \label{tab:uspesnost_final}
-\begin{tabular}{llll}
+\begin{tabular}{lrrr}
 \hline
 testovacia sada & priamočiary prístup & $M=2$     & $M=3$     \\ \hline
-KLEBS\_01       & $00,0 \%$           & $00,0 \%$ & $00,0 \%$ \\
-KLEBS\_03       & $00,0 \%$           & $00,0 \%$ & $00,0 \%$ \\
-KLEBS\_10       & $00,0 \%$           & $00,0 \%$ & $00,0 \%$ \\
-KLEBS\_30       & $00,0 \%$           & $00,0 \%$ & $00,0 \%$ \\
-NANO\_01        & $00,0 \%$           & $00,0 \%$ & $00,0 \%$ \\
-NANO\_03        & $00,0 \%$           & $00,0 \%$ & $00,0 \%$ \\
-NANO\_10        & $00,0 \%$           & $00,0 \%$ & $00,0 \%$ \\
-NANO\_30        & $00,0 \%$           & $00,0 \%$ & $00,0 \%$
+KLEBS\_01       & $2,1 \%$           & $31,9 \%$ & $30,7 \%$ \\
+KLEBS\_03       & $5,7 \%$           & $43,6 \%$ & $43,2 \%$ \\
+KLEBS\_10       & $16,1 \%$           & $54,9 \%$ & $55,4 \%$ \\
+KLEBS\_30       & $37,8 \%$           & $61,3 \%$ & $62,0 \%$ \\
+NANO\_01        & $3,1 \%$           & $32,3 \%$ & $30,9 \%$ \\
+NANO\_03        & $8,7 \%$           & $42,3 \%$ & $41,2 \%$ \\
+NANO\_10        & $20,1 \%$           & $52,8 \%$ & $53,0 \%$ \\
+NANO\_30        & $42,7 \%$           & $59,9 \%$ & $60,6 \%$
 \end{tabular}
 \end{table}
-
-\todo{správne grafy a dáta v tabuľke}.
